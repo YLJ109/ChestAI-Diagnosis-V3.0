@@ -16,7 +16,7 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 
-
+.vscode
 .idea
 .DS_Store
 *.suo
@@ -25,6 +25,9 @@ dist-ssr
 *.sln
 *.sw?
 
+vite/*
+.vite
+dist
 .venv
 __pycache__
 .env
