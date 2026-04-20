@@ -356,7 +356,10 @@ def _load_onnx_model(onnx_path, device):
     # Session 选项：性能优化
     sess_options = ort.SessionOptions()
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-    sess_options.intra_op_num_threads = min(os.cpu_count(), 4)  # 内部并行线程数
+    sess_options.intra_op_num_threads = min(os.cpu_count(), 8)   # 内部并行线程数（提升至8）
+    sess_options.inter_op_num_threads = 2                        # 层间并行（新增）
+    sess_options.execution_mode = ort.ExecutionMode.SEQUENTIAL     # 减少线程切换开销（新增）
+    sess_options.enable_mem_pattern = True                       # 内存分配优化（新增）
     # log_level 部分版本不支持，安全设置
     if hasattr(sess_options, 'log_level'):
         sess_options.log_level = 3  # 只显示错误
@@ -566,6 +569,9 @@ def predict_image(image_path, target_disease=None, skip_heatmap=False):
         'heatmap_image': heatmap_pil,
         'model_version': 'model_chestX-ray14_epochs5_81.49_v1.0 (ONNX)' if _use_onnx else 'model_chestX-ray14_epochs5_81.49_v1.0',
     }
+
+
+def predict_images_batch(image_paths, skip_heatmap=True):
     """批量图片推理（多线程预处理 + ONNX/PyTorch 批量推理）
 
     Args:

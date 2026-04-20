@@ -168,7 +168,7 @@
             <div class="image-box">
               <div class="image-label">原始影像</div>
               <div class="preview-img-wrapper" :class="{ 'has-image': imagePreviewUrl || result?.image_url }">
-                <el-image v-if="imagePreviewUrl || result?.image_url" :src="imagePreviewUrl || result.image_url"
+                <el-image v-if="imagePreviewUrl || result?.image_url" :src="imagePreviewUrl || result.image_url" lazy
                   fit="contain" class="preview-img" :preview-src-list="[imagePreviewUrl || result.image_url]">
                   <template #error>
                     <div class="image-error"><el-icon :size="28">
@@ -184,7 +184,7 @@
             <div class="image-box" v-if="result?.heatmap_url">
               <div class="image-label">Grad-CAM 热力图</div>
               <div class="preview-img-wrapper has-image">
-                <el-image :src="result.heatmap_url" fit="contain" class="preview-img"
+                <el-image :src="result.heatmap_url" fit="contain" class="preview-img" lazy
                   :preview-src-list="[result.heatmap_url]">
                   <template #error>
                     <div class="image-error"><el-icon :size="28">

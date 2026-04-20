@@ -1,13 +1,40 @@
-"""大模型调用服务 - 报告生成 + AI咨询"""
+"""大模型调用服务 - 报告生成 + AI咨询（优化版：缓存/超时/重试/并发控制）"""
 import json
 import time
+import threading
 from openai import OpenAI
 from models.llm_config import LlmConfig
 from utils.encryption import decrypt_value
 
 
+# ============================================================
+# 全局缓存与并发控制
+# ============================================================
+_llm_client_cache = {}       # {config_id: (client, model_name, default_params, cached_at)}
+_llm_client_lock = threading.Lock()  # 缓存写锁
+_llm_semaphore = threading.Semaphore(5)  # 并发信号量：最多 5 个同时 LLM 请求
+_CACHE_TTL = 300  # 缓存有效期 5 分钟（配置变更后自动刷新）
+
+
 def _get_llm_client(llm_config_id=None):
-    """获取LLM客户端配置"""
+    """获取LLM客户端配置（带缓存，避免重复创建和数据库查询）
+
+    Returns:
+        (client, model_name, default_params) 或 (None, None, None)
+    """
+    now = time.time()
+
+    # 尝试从缓存获取
+    cache_key = llm_config_id or '__default__'
+    with _llm_client_lock:
+        if cache_key in _llm_client_cache:
+            cached = _llm_client_cache[cache_key]
+            if now - cached[3] < _CACHE_TTL:
+                return cached[0], cached[1], cached[2]
+            else:
+                del _llm_client_cache[cache_key]  # 过期清除
+
+    # 缓存未命中 → 查数据库
     if llm_config_id:
         config = LlmConfig.query.get(llm_config_id)
     else:
@@ -21,15 +48,39 @@ def _get_llm_client(llm_config_id=None):
     api_key = decrypt_value(config.api_key_encrypted)
     default_params = json.loads(config.default_params) if config.default_params else {}
 
+    # 创建客户端（带超时控制）
     client = OpenAI(
         api_key=api_key,
         base_url=config.api_endpoint,
+        timeout=60.0,           # 连接+读取总超时 60 秒
+        max_retries=0,          # 我们自己控制重试，不让 SDK 重试
     )
-    return client, config.model_name, default_params
+
+    result = (client, config.model_name, default_params)
+
+    # 写入缓存
+    with _llm_client_lock:
+        _llm_client_cache[cache_key] = (client, config.model_name, default_params, now)
+
+    return result
+
+
+def _clear_llm_cache():
+    """清除 LLM 客户端缓存（配置变更时调用）"""
+    global _llm_client_cache
+    with _llm_client_lock:
+        old = _llm_client_cache
+        _llm_client_cache = {}
+    # 关闭旧客户端连接
+    for key, (client, _, _, _) in old.items():
+        try:
+            client.close()
+        except Exception:
+            pass
 
 
 def generate_report(probabilities, patient_info=None):
-    """调用大模型生成结构化诊断报告
+    """调用大模型生成结构化诊断报告（带重试机制）
 
     Args:
         probabilities: 14种疾病概率列表
@@ -38,6 +89,33 @@ def generate_report(probabilities, patient_info=None):
     Returns:
         dict: 包含findings, impression, recommendations的报告
     """
+    max_retries = 2  # 最多重试 2 次
+
+    for attempt in range(max_retries + 1):
+        try:
+            # 并发控制：获取信号量（非阻塞式等待，最长等 120 秒）
+            acquired = _llm_semaphore.acquire(timeout=120)
+            if not acquired:
+                print("[LLM服务] 并发信号量超时，跳过本次报告生成")
+                return _generate_fallback_report(probabilities, patient_info)
+
+            try:
+                return _do_generate_report(probabilities, patient_info)
+            finally:
+                _llm_semaphore.release()
+
+        except Exception as e:
+            if attempt < max_retries:
+                wait_time = (2 ** attempt) * 1.0  # 指数退避: 1s, 2s
+                print(f"[LLM服务] 报告生成失败(第{attempt+1}次): {e}, {wait_time:.0f}s 后重试...")
+                time.sleep(wait_time)
+            else:
+                print(f"[LLM服务] 报告生成失败(已耗尽{max_retries+1}次重试): {e}")
+                return _generate_fallback_report(probabilities, patient_info)
+
+
+def _do_generate_report(probabilities, patient_info=None):
+    """实际执行一次 LLM 报告生成调用"""
     client, model_name, default_params = _get_llm_client()
     if not client:
         return _generate_fallback_report(probabilities, patient_info)
@@ -84,43 +162,38 @@ def generate_report(probabilities, patient_info=None):
   "recommendations": "建议内容"
 }}"""
 
+    temperature = default_params.get('temperature', 0.3)
+    max_tokens = default_params.get('max_tokens', 2048)
+
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": "你是一位专业的胸部放射科医师，擅长影像诊断和报告撰写。请用中文回复。"},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+
+    content = response.choices[0].message.content.strip()
+    # 尝试解析JSON
     try:
-        temperature = default_params.get('temperature', 0.3)
-        max_tokens = default_params.get('max_tokens', 2048)
+        # 处理markdown代码块包裹
+        if content.startswith('```'):
+            content = content.split('```')[1]
+            if content.startswith('json'):
+                content = content[4:]
+            content = content.strip()
+        report = json.loads(content)
+    except json.JSONDecodeError:
+        report = {
+            'findings': content,
+            'impression': '',
+            'recommendations': '',
+        }
 
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": "你是一位专业的胸部放射科医师，擅长影像诊断和报告撰写。请用中文回复。"},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-
-        content = response.choices[0].message.content.strip()
-        # 尝试解析JSON
-        try:
-            # 处理markdown代码块包裹
-            if content.startswith('```'):
-                content = content.split('```')[1]
-                if content.startswith('json'):
-                    content = content[4:]
-                content = content.strip()
-            report = json.loads(content)
-        except json.JSONDecodeError:
-            report = {
-                'findings': content,
-                'impression': '',
-                'recommendations': '',
-            }
-
-        report['ai_model_used'] = model_name
-        return report
-
-    except Exception as e:
-        print(f"[LLM服务] 报告生成失败: {e}")
-        return _generate_fallback_report(probabilities, patient_info)
+    report['ai_model_used'] = model_name
+    return report
 
 
 def _generate_fallback_report(probabilities, patient_info=None):
@@ -146,7 +219,6 @@ def _generate_fallback_report(probabilities, patient_info=None):
         impression_parts.append("未见明显异常")
 
     rec_parts.append("建议结合临床表现和其他检查结果综合判断")
-    # 如果有临床症状，加入相关建议
     clinical_finding = patient_info.get('clinical_finding', '') if patient_info else ''
     if clinical_finding:
         findings_parts.insert(0, f"患者主诉：{clinical_finding}")

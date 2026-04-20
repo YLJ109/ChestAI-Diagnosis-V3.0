@@ -190,7 +190,7 @@ const passwordForm = ref({ old_password: '', new_password: '' })
 
 function handleCommand(command: string) {
   if (command === 'logout') {
-    logoutApi().catch(() => { })
+    // 清除本地状态即可（JWT 体系下客户端清除 token = 已退出）
     authStore.logout()
     router.push('/login')
   } else if (command === 'password') {

@@ -154,7 +154,7 @@
             <div class="img-box">
               <div class="img-label">原始胸部X光片</div>
               <div class="img-wrapper">
-                <el-image :src="imgUrl(currentRecord.image_path)" fit="contain"
+<el-image :src="imgUrl(currentRecord.image_path)" fit="contain" lazy
                   :preview-src-list="currentRecord.image_path ? [imgUrl(currentRecord.image_path)] : []">
                   <template #error>
                     <div class="img-error"><el-icon>
@@ -167,7 +167,7 @@
             <div class="img-box" v-if="currentRecord.heatmap_path">
               <div class="img-label">Grad-CAM 热力图</div>
               <div class="img-wrapper">
-                <el-image :src="imgUrl(currentRecord.heatmap_path)" fit="contain"
+<el-image :src="imgUrl(currentRecord.heatmap_path)" fit="contain" lazy
                   :preview-src-list="[imgUrl(currentRecord.heatmap_path)]">
                   <template #error>
                     <div class="img-error"><el-icon>
@@ -207,7 +207,7 @@
                   </div>
                 </div>
                 <span class="prob-val" :style="{ color: probColor(p.disease_code) }">{{ (p.probability * 100).toFixed(1)
-                }}%</span>
+                  }}%</span>
               </div>
             </div>
 
@@ -266,11 +266,11 @@
       <div class="image-compare" v-if="currentRecord">
         <div class="image-box">
           <div class="image-label">原始影像</div>
-          <el-image :src="imgUrl(currentRecord.image_path)" fit="contain" class="preview-img" />
+          <el-image :src="imgUrl(currentRecord.image_path)" fit="contain" class="preview-img" lazy />
         </div>
         <div class="image-box" v-if="currentRecord.heatmap_path">
           <div class="image-label">Grad-CAM热力图</div>
-          <el-image :src="imgUrl(currentRecord.heatmap_path)" fit="contain" class="preview-img" />
+          <el-image :src="imgUrl(currentRecord.heatmap_path)" fit="contain" class="preview-img" lazy />
         </div>
       </div>
     </el-dialog>

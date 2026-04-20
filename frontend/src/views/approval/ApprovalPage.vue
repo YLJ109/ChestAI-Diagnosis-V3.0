@@ -124,12 +124,12 @@
         <div class="detail-images" v-if="currentDetail.image_url || currentDetail.heatmap_url">
           <div class="detail-img-box" v-if="currentDetail.image_url">
             <div class="detail-img-label">原始影像</div>
-            <el-image :src="currentDetail.image_url" fit="contain" class="detail-img"
+            <el-image :src="currentDetail.image_url" fit="contain" class="detail-img" lazy
               :preview-src-list="[currentDetail.image_url]" />
           </div>
           <div class="detail-img-box" v-if="currentDetail.heatmap_url">
             <div class="detail-img-label">Grad-CAM 热力图</div>
-            <el-image :src="currentDetail.heatmap_url" fit="contain" class="detail-img"
+            <el-image :src="currentDetail.heatmap_url" fit="contain" class="detail-img" lazy
               :preview-src-list="[currentDetail.heatmap_url]" />
           </div>
         </div>

@@ -165,7 +165,7 @@ const trendOption = computed(() => {
       borderColor: `rgba(${PRIMARY_RGB}, 0.3)`,
       textStyle: { color: tp },
     },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    grid: { left: '3%', right: '4%', bottom: '3%' },
     xAxis: {
       type: 'category',
       data: trendData.value.map(d => d.date),

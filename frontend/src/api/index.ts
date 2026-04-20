@@ -34,10 +34,19 @@ http.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
       if (status === 401) {
+        // 区分：登录页的 401（密码错） vs 其他页面的 401（token 过期）
+        const isLoginPage = window.location.pathname === '/login' ||
+          window.location.hash.includes('/login')
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-        router.push('/login')
-        ElMessage.error('登录已过期，请重新登录')
+        if (isLoginPage) {
+          // 登录页输错密码：显示后端返回的具体错误信息
+          ElMessage.error(data?.message || '用户名或密码错误')
+        } else {
+          // 其他页面 token 过期：跳转登录页
+          router.push('/login')
+          ElMessage.error('登录已过期，请重新登录')
+        }
       } else if (status === 403) {
         ElMessage.error('权限不足')
       } else {

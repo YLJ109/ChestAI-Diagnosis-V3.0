@@ -1,13 +1,15 @@
-"""批量诊断API - 异步后台处理 + 文件名解析模式 + 批量PDF报告生成"""
+"""批量诊断API - 异步后台处理 + 文件名解析模式 + 批量PDF报告生成（优化版）"""
 import json
 import os
 import re
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from extensions import db
+from sqlalchemy.orm import selectinload, joinedload
 from models.diagnosis import Diagnosis, DiseaseProbability
 from models.batch import BatchRecord
 from models.patient import Patient
@@ -15,7 +17,7 @@ from models.user import User
 from models.report import Report
 from utils.auth import token_required, role_required
 from utils.validators import allowed_file
-from services.ai_service import predict_image, is_model_loaded, load_model, get_runtime_params
+from services.ai_service import predict_image, predict_images_batch, is_model_loaded, load_model, get_runtime_params
 from models.approval import Approval
 from services.report_service import create_diagnosis_report
 from services.pdf_service import generate_batch_pdf
@@ -25,6 +27,9 @@ batch_bp = Blueprint('batch', __name__, url_prefix='/api/v1/batch')
 # 全局进度跟踪: { batch_id: progress_dict }
 _batch_progress = {}
 _batch_cancel = {}
+
+# 报告生成线程池（3 并发，用于 LLM 报告并行生成）
+_report_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='llm_report')
 
 # 文件名解析正则: P患者ID-姓名-性别-年龄-临床发现-图片ID.扩展名
 FILENAME_RE = re.compile(r'^(P\d+)-(.+)-(male|female)-(\d+)-([A-Za-z]+)-(\d+)\.(\w+)$')
@@ -178,7 +183,30 @@ def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, 
         pass  # 已处理取消
 
     elif valid_entries:
-        # ===== 流水线模式: 逐张处理 - 检测→推送→报告→完成 → 下一张 =====
+        # ===== 优化后的流水线: 批量推理 → 逐张处理DB/报告 =====
+
+        # ---- 阶段1: 收集所有有效图片路径，一次性批量推理 ----
+        all_paths = [ve[3] for ve in valid_entries]  # filepath 列表
+        all_names = [ve[2] for ve in valid_entries]  # filename_orig 列表
+
+        t_batch_start = time.perf_counter()
+        print(f"[批量诊断] 阶段1: 开始批量推理 {len(all_paths)} 张图片...")
+        try:
+            batch_results = predict_images_batch(all_paths, skip_heatmap=True)
+        except Exception as batch_err:
+            print(f"[批量诊断] 批量推理失败，回退到逐张模式: {batch_err}")
+            batch_results = None
+
+        t_batch = time.perf_counter() - t_batch_start
+        if batch_results and len(batch_results) == len(all_paths):
+            print(f"[批量诊断] 阶段1完成: 批量推理 {len(all_paths)} 张耗时 {t_batch:.2f}s")
+        else:
+            print(f"[批量诊断] 批量推理不可用，使用逐张回退模式")
+
+        # 获取医生信息（只查一次）
+        doctor = User.query.get(user_id)
+
+        # ---- 阶段2: 逐张处理（使用预计算结果，不再重复推理）----
         for idx, (entry, patient, filename_orig, filepath) in enumerate(valid_entries):
             cancel_event = _batch_cancel.get(batch_id)
             if cancel_event and cancel_event.is_set():
@@ -190,8 +218,13 @@ def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, 
             progress['processed'] = idx + 1
 
             try:
-                # ---- 步骤1: 单张检测 ----
-                result = predict_image(filepath, skip_heatmap=True)
+                # ---- 步骤1: 使用批量推理结果（或回退逐张）----
+                if batch_results and idx < len(batch_results) and batch_results[idx]:
+                    result = batch_results[idx]
+                else:
+                    # 回退：逐张推理
+                    result = predict_image(filepath, skip_heatmap=True)
+
                 if result is None:
                     failed_count += 1
                     progress['results'].append({
@@ -241,9 +274,6 @@ def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, 
                 patient_info_dict = patient.to_dict() if patient else {}
                 _db_commit_with_retry()
 
-                # 获取医生信息
-                doctor = User.query.get(user_id)
-
                 diag_result = {
                     'diagnosis_id': diagnosis_id,
                     'diagnosis_no': diagnosis_no,
@@ -274,9 +304,8 @@ def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, 
                     'data': diag_result,
                 })
 
-                # ---- 步骤4: 生成热力图 + LLM报告 ----
+                # ---- 步骤4: 仅生成热力图（Grad-CAM，单张，不重复推理概率）----
                 try:
-                    # 带热力图的推理（单张）
                     result_full = predict_image(filepath, skip_heatmap=False)
                     heatmap_image = result_full.get('heatmap_image')
 
@@ -284,19 +313,22 @@ def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, 
                     if heatmap_image:
                         heatmap_filename = f"{uuid.uuid4().hex}_gradcam.png"
                         heatmap_image.save(os.path.join(heatmap_dir, heatmap_filename))
-                        # 更新DB（使用新session重新查询）
                         diag = Diagnosis.query.get(diagnosis_id)
                         if diag:
                             diag.heatmap_path = f"heatmaps/{heatmap_filename}"
                         diag_result['heatmap_url'] = f"/static/heatmaps/{heatmap_filename}"
 
-                    # LLM报告生成（使用预提取的patient信息）
+                    # LLM报告生成（使用线程池并发，最多3个同时调用LLM API）
                     patient_info = dict(patient_info_dict) if patient_info_dict else {}
                     clinical_finding = clinical_findings_map.get(filename_orig, '')
                     if clinical_finding:
                         patient_info['clinical_finding'] = clinical_finding
 
-                    report_data = create_diagnosis_report(probabilities, patient_info or None)
+                    # 通过线程池提交 LLM 调用（非阻塞提交，阻塞等待结果）
+                    report_future = _report_pool.submit(
+                        create_diagnosis_report, probabilities, patient_info or None
+                    )
+                    report_data = report_future.result(timeout=120)  # 单张报告最长等 120 秒
                     report = Report(
                         diagnosis_id=diagnosis_id,
                         ai_generated_content=report_data['ai_generated_content'],
@@ -519,15 +551,29 @@ def get_batch_progress(batch_id):
     if not batch:
         return jsonify({'code': 404, 'message': '批次不存在'}), 404
 
-    # 从DB构建结果
-    diagnoses = Diagnosis.query.filter_by(batch_id=batch_id).all()
+    # 从DB构建结果（优化：批量预加载，避免 N+1 查询）
+    diagnoses = (
+        Diagnosis.query.filter_by(batch_id=batch_id)
+        .options(selectinload(DiseaseProbability), selectinload(Report))
+        .all()
+    )
+
+    # 批量预取所有患者（一次查询）
+    patient_ids = list(set(
+        d.patient_id for d in diagnoses if d.patient_id and d.patient_id > 0
+    ))
+    patients_map = {}
+    if patient_ids:
+        for p in Patient.query.filter(Patient.id.in_(patient_ids)).all():
+            patients_map[p.id] = p
+
     results = []
     for d in diagnoses:
         probs = [p.to_dict() for p in d.probabilities]
         probs_sorted = sorted(probs, key=lambda x: x['probability'], reverse=True)
         top_prob = probs_sorted[0]['probability'] if probs_sorted else 0
-        patient = Patient.query.get(d.patient_id) if d.patient_id and d.patient_id > 0 else None
-        reports = Report.query.filter_by(diagnosis_id=d.id).all()
+        patient = patients_map.get(d.patient_id) if d.patient_id and d.patient_id > 0 else None
+        reports = d.reports  # 已通过 selectinload 预加载
         report = reports[0] if reports else None
 
         results.append({
@@ -885,13 +931,34 @@ def get_batch_list():
     query = BatchRecord.query.order_by(BatchRecord.created_at.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
+    # 预加载所有批次的诊断记录
+    batch_ids = [b.id for b in pagination.items]
+    all_diagnoses = (
+        Diagnosis.query.filter(Diagnosis.batch_id.in_(batch_ids))
+        .all()
+    ) if batch_ids else []
+
+    # 批量预取所有患者（一次查询）
+    diag_patient_ids = list(set(
+        d.patient_id for d in all_diagnoses if d.patient_id and d.patient_id > 0
+    ))
+    patients_map = {}
+    if diag_patient_ids:
+        for p in Patient.query.filter(Patient.id.in_(diag_patient_ids)).all():
+            patients_map[p.id] = p
+
+    # 按 batch_id 分组
+    diagnoses_by_batch = {}
+    for d in all_diagnoses:
+        diagnoses_by_batch.setdefault(d.batch_id, []).append(d)
+
     items = []
     for b in pagination.items:
         d = b.to_dict()
         d['diagnoses'] = []
-        for diag in b.diagnoses:
+        for diag in diagnoses_by_batch.get(b.id, []):
             dd = diag.to_dict()
-            patient = Patient.query.get(diag.patient_id) if diag.patient_id and diag.patient_id > 0 else None
+            patient = patients_map.get(diag.patient_id) if diag.patient_id and diag.patient_id > 0 else None
             dd['patient_name'] = patient.name if patient else '未知患者'
             dd['patient_no'] = patient.patient_no if patient else ''
             d['diagnoses'].append(dd)
@@ -911,19 +978,31 @@ def get_batch_list():
 @batch_bp.route('/<int:batch_id>', methods=['GET'])
 @token_required
 def get_batch_detail(batch_id):
-    """获取批次详情"""
+    """获取批次详情（优化：批量预加载）"""
     batch = BatchRecord.query.get_or_404(batch_id)
-    diagnoses = Diagnosis.query.filter_by(batch_id=batch_id).all()
+    diagnoses = (
+        Diagnosis.query.filter_by(batch_id=batch_id)
+        .options(selectinload(DiseaseProbability), selectinload(Report))
+        .all()
+    )
+
+    # 批量预取患者
+    patient_ids = list(set(
+        d.patient_id for d in diagnoses if d.patient_id and d.patient_id > 0
+    ))
+    patients_map = {}
+    if patient_ids:
+        for p in Patient.query.filter(Patient.id.in_(patient_ids)).all():
+            patients_map[p.id] = p
 
     diag_list = []
     for d in diagnoses:
         dd = d.to_dict()
-        patient = Patient.query.get(d.patient_id) if d.patient_id and d.patient_id > 0 else None
+        patient = patients_map.get(d.patient_id) if d.patient_id and d.patient_id > 0 else None
         dd['patient_name'] = patient.name if patient else '未知患者'
         dd['patient_no'] = patient.patient_no if patient else ''
-        dd['probabilities'] = [p.to_dict() for p in d.probabilities]
-        reports = Report.query.filter_by(diagnosis_id=d.id).all()
-        dd['reports'] = [r.to_dict() for r in reports]
+        dd['probabilities'] = [p.to_dict() for p in d.probabilities]  # 已预加载
+        dd['reports'] = [r.to_dict() for r in d.reports]  # 已预加载
         diag_list.append(dd)
 
     return jsonify({
