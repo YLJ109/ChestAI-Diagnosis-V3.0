@@ -101,7 +101,7 @@ class GradCAM:
         self.model.zero_grad()
         one_hot = torch.zeros_like(output)
         one_hot[0][target_class] = 1
-        output.backward(gradient=one_hot, retain_graph=True)
+        output.backward(gradient=one_hot, retain_graph=False)
 
         weights = self.gradients.mean(dim=[2, 3], keepdim=True)
         cam = (weights * self.activations).sum(dim=1, keepdim=True)
@@ -244,6 +244,14 @@ def _ensure_pytorch_model(model_path):
         device = get_device()
         print(f"[AI服务] [Grad-CAM] 懒加载 PyTorch 模型: {model_path}")
 
+        # 如果 ONNX 已占用 CUDA 上下文，先初始化 PyTorch 的主上下文（解决 cuBLAS 冲突）
+        if device.type == 'cuda':
+            try:
+                torch.cuda.init()
+                torch.cuda.set_device(0)
+            except Exception as e:
+                print(f"[AI服务] [Grad-CAM] CUDA 上下文初始化跳过: {e}")
+
         _pytorch_model = CheXNet(num_classes=NUM_CLASSES, pretrained=False, dropout=0.3)
         checkpoint = torch.load(model_path, map_location=device, weights_only=False)
 
@@ -357,9 +365,15 @@ def _load_onnx_model(onnx_path, device):
     sess_options = ort.SessionOptions()
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
     sess_options.intra_op_num_threads = min(os.cpu_count(), 8)   # 内部并行线程数（提升至8）
-    sess_options.inter_op_num_threads = 2                        # 层间并行（新增）
-    sess_options.execution_mode = ort.ExecutionMode.SEQUENTIAL     # 减少线程切换开销（新增）
-    sess_options.enable_mem_pattern = True                       # 内存分配优化（新增）
+    # 以下属性部分 ONNX 版本不支持，安全设置
+    if hasattr(ort, 'ExecutionMode'):
+        try:
+            sess_options.inter_op_num_threads = 2                    # 层间并行
+            sess_options.execution_mode = ort.ExecutionMode.SEQUENTIAL   # 减少线程切换开销
+        except (AttributeError, TypeError):
+            pass
+    if hasattr(sess_options, 'enable_mem_pattern'):
+        sess_options.enable_mem_pattern = True                      # 内存分配优化
     # log_level 部分版本不支持，安全设置
     if hasattr(sess_options, 'log_level'):
         sess_options.log_level = 3  # 只显示错误
@@ -552,6 +566,13 @@ def predict_image(image_path, target_disease=None, skip_heatmap=False):
         if pth_path and _ensure_pytorch_model(pth_path):
             try:
                 device = get_device()
+                # 确保 PyTorch 拥有正确的 CUDA 上下文（解决与 ONNX 的冲突）
+                if device.type == 'cuda':
+                    try:
+                        torch.cuda.set_device(0)
+                    except Exception:
+                        pass
+
                 tensor = torch.from_numpy(np_arr).unsqueeze(0).to(device)
 
                 if target_disease and target_disease in CLASS_NAMES:
@@ -560,6 +581,9 @@ def predict_image(image_path, target_disease=None, skip_heatmap=False):
                     target_idx = int(np.argmax(probs))
 
                 cam = _grad_cam.generate(tensor, target_class=target_idx)
+                # Grad-CAM 反向传播后释放计算图占用的显存
+                if device.type == 'cuda':
+                    torch.cuda.empty_cache()
                 heatmap_pil = apply_heatmap(image_pil, cam)
             except Exception as e:
                 print(f"[AI服务] 热力图生成失败: {e}")
