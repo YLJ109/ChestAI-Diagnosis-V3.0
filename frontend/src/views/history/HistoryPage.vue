@@ -206,7 +206,8 @@
                     </div>
                   </div>
                 </div>
-                <span class="prob-val" :style="{ color: probColor(p.disease_code) }">{{ (p.probability * 100).toFixed(1) }}%</span>
+                <span class="prob-val" :style="{ color: probColor(p.disease_code) }">{{ (p.probability * 100).toFixed(1)
+                }}%</span>
               </div>
             </div>
 
