@@ -14,7 +14,7 @@
 
 [功能特性](#功能特性) · [系统截图](#系统截图) · [快速开始](#快速开始) · [部署指南](#部署指南) · [API 文档](#api-接口文档)
 
-<img src="ProjectImage/登录界面.png" alt="登录界面" width="900"/>
+<img src="ProjectImage/批量诊断-检测结果与生成报告.png" alt="登录界面" width="900"/>
 
 </div>
 
