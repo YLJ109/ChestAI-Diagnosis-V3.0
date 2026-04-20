@@ -197,12 +197,6 @@
             </div>
 
             <div class="prob-section">
-              <!-- DEBUG: 显示原始数据长度，确认后删除 -->
-              <div style="font-size:11px;color:#999;margin-bottom:8px" v-if="detailTop5Probs.length === 0">
-                [DEBUG] probabilities 长度={{ currentRecord?.probabilities?.length }},
-                disease_probabilities 长度={{ currentRecord?.disease_probabilities?.length }},
-                detailTop5Probs 长度={{ detailTop5Probs.length }}
-              </div>
               <div class="prob-row" v-for="p in detailTop5Probs" :key="p.disease_code">
                 <span class="prob-label">{{ p.disease_name_zh }}</span>
                 <div class="prob-bar-wrap">
@@ -434,11 +428,6 @@ async function viewDetail(row: any) {
   try {
     const res: any = await getDiagnosisApi(row.id)
     currentRecord.value = res.data
-    // DEBUG: 打印 API 返回的完整数据结构，确认概率字段名
-    console.log('[HistoryDetail] API response keys:', Object.keys(res.data || {}))
-    console.log('[HistoryDetail] probabilities:', res.data?.probabilities)
-    console.log('[HistoryDetail] disease_probabilities:', res.data?.disease_probabilities)
-    console.log('[HistoryDetail] top_diseses:', res.data?.top_diseses)
     detailVisible.value = true
   } catch { /* handled */ }
 }
@@ -1054,7 +1043,8 @@ onMounted(() => fetchData())
       }
     }
 
-    .prob-section {
+    // 进度条样式 — 使用 :deep 穿透 scoped，因为 el-dialog 通过 Teleport 渲染到 body 下
+    :deep(.prob-section) {
       background: var(--card-bg);
       border: 1px solid var(--glass-border);
       border-radius: 12px;
@@ -1093,11 +1083,15 @@ onMounted(() => fetchData())
           transition: width 0.6s ease;
         }
 
+        .prob-fill {
+          height: 100%;
+          border-radius: 3px;
+        }
+
         .prob-val {
           width: 50px;
           font-size: 12px;
           font-weight: 600;
-          color: var(--text-primary);
           text-align: right;
           flex-shrink: 0;
         }

@@ -168,9 +168,21 @@
         </div>
 
         <!-- 报告内容 -->
-        <div class="detail-section" v-if="currentDetail.report">
+        <div class="detail-section" v-if="detailReport">
           <div class="detail-title">AI诊断报告</div>
-          <div class="report-preview" v-html="formatReport(currentDetail.report)"></div>
+          <template v-if="hasReportContent">
+            <div class="report-preview" v-html="formatReport(detailReport)"
+              style="font-size:13px;color:var(--text-secondary);line-height:1.8;max-height:200px;overflow-y:auto;padding:12px;background:var(--glass-bg);border-radius:var(--radius-md);border:1px solid var(--glass-border);">
+            </div>
+          </template>
+          <div v-else class="report-empty"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:28px 16px;color:var(--text-muted);font-size:13px;background:var(--glass-bg);border-radius:var(--radius-md);border:1px dashed var(--glass-border);">
+            <el-icon :size="32">
+              <Document />
+            </el-icon>
+            <span>报告尚未生成</span>
+            <span style="font-size:12px;color:var(--text-placeholder)">请在诊断中心点击"生成报告"</span>
+          </div>
         </div>
 
         <!-- 审批信息 -->
@@ -240,12 +252,14 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { Search, Refresh, Document } from '@element-plus/icons-vue'
 import {
   getApprovalsApi, getApprovalApi, approveApprovalApi,
   rejectApprovalApi, requestRevisionApi, getApprovalStatsApi,
   syncMissingApprovalsApi,
 } from '@/api/approvals'
+import { getReportApi } from '@/api/reports'
+import { getDiagnosisApi } from '@/api/diagnose'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -255,6 +269,7 @@ const detailVisible = ref(false)
 const reviewVisible = ref(false)
 const currentDetail = ref<any>(null)
 const currentRow = ref<any>(null)
+const fetchedReport = ref<any>(null)
 const reviewType = ref<'approve' | 'reject' | 'revise'>('approve')
 
 const stats = reactive({ total: 0, pending: 0, approved: 0, rejected: 0, revision_needed: 0, unsubmitted: 0 })
@@ -278,6 +293,38 @@ const statCards = computed(() => [
   { key: 'unsubmitted', label: '未提交', value: stats.unsubmitted, color: '#6B7280' },
 ])
 
+/** 详情中的报告数据（兼容多种后端返回格式 + 远程获取） */
+const detailReport = computed(() => {
+  const d = currentDetail.value
+  if (!d) return null
+  // 1. 内嵌报告（批量诊断）— 必须有实际内容才使用，空壳不放行
+  const inline = d.report || d.diagnosis_report || d.ai_report || d.diagnosis?.report
+  if (inline && typeof inline === 'object') {
+    const inlineContent = inline.final_content || inline.doctor_edited_content ||
+      inline.ai_generated_content || inline.findings ||
+      inline.impression || inline.recommendations
+    if (inlineContent && String(inlineContent).trim()) {
+      return inline
+    }
+    // 内嵌报告是空壳，继续往下走 → 取 fetchedReport
+  }
+  // 2. 通过 diagnosis_id 远程获取的报告（诊断中心单次诊断）
+  if (fetchedReport.value) {
+    return fetchedReport.value
+  }
+  return null
+})
+
+/** 报告是否有实际内容（非空对象且至少有一个内容字段有值） */
+const hasReportContent = computed(() => {
+  const r = detailReport.value
+  if (!r || typeof r !== 'object') return false
+  const content = r.final_content || r.doctor_edited_content ||
+    r.ai_generated_content || r.content || r.report_content ||
+    r.findings || r.impression || r.recommendations || r.text || r.body
+  return Boolean(content && content.toString().trim())
+})
+
 const reviewTitle = computed(() => {
   if (reviewType.value === 'approve') return '审批通过'
   if (reviewType.value === 'reject') return '驳回审批'
@@ -298,7 +345,17 @@ function filterByStatus(key: string) {
 
 function formatReport(report: any) {
   if (!report) return ''
-  const content = report.final_content || report.doctor_edited_content || report.ai_generated_content || ''
+  // 方式1：结构化字段（HistoryPage 同款：findings/impression/recommendations）
+  const parts: string[] = []
+  if (report.findings) parts.push('【检查所见】\n' + report.findings)
+  if (report.impression) parts.push('【诊断意见】\n' + report.impression)
+  if (report.recommendations) parts.push('【建议】\n' + report.recommendations)
+  if (parts.length) return parts.join('<br><br>')
+
+  // 方式2：长文本字段
+  const content = report.final_content || report.doctor_edited_content ||
+    report.ai_generated_content || report.content || report.report_content ||
+    report.text || report.body || (typeof report === 'string' ? report : '') || ''
   return content.replace(/\n/g, '<br>')
 }
 
@@ -324,8 +381,67 @@ async function fetchData() {
 
 async function openDetail(row: any) {
   try {
+    fetchedReport.value = null // 重置
     const res: any = await getApprovalApi(row.id)
-    currentDetail.value = res.data
+    const data = res.data
+
+    currentDetail.value = data
+
+    // ====== 报告获取策略（参考 HistoryPage 的做法）======
+    //
+    // 批量诊断：report 内容内嵌在审批记录中，直接使用
+    // 单次诊断：需要通过 diagnosis_id 获取完整诊断记录，
+    //           从 diagnosis.reports[0] 中提取最新报告内容
+    //
+
+    const inlineReport = data.report || data.diagnosis_report || data.ai_report || data.diagnosis?.report
+
+    // 检查内嵌报告是否有实际内容
+    if (inlineReport) {
+      const inlineContent = inlineReport.final_content || inlineReport.doctor_edited_content ||
+        inlineReport.ai_generated_content || inlineReport.findings ||
+        inlineReport.impression || inlineReport.recommendations
+      if (inlineContent && String(inlineContent).trim()) {
+        // 有内容的内嵌报告（批量诊断），直接使用
+        fetchedReport.value = inlineReport
+        return detailVisible.value = true
+      }
+    }
+
+    // 内嵌报告为空 → 通过 diagnosis_id 获取诊断记录（和 HistoryPage 相同的方式）
+    const diagId = data.diagnosis_id || data.diagnosis?.id
+    if (diagId) {
+      try {
+        const diagRes: any = await getDiagnosisApi(diagId)
+        const diagnosis = diagRes.data
+
+        // 和 HistoryPage 一样，从 reports 数组中取
+        const reports = diagnosis.reports || []
+        if (reports.length > 0) {
+          fetchedReport.value = reports[0]
+        } else {
+          // 没有 reports 数组，尝试 ai_report 字段
+          if (diagnosis.ai_report) {
+            console.log('[审批详情] 从诊断记录 ai_report 获取到报告')
+            fetchedReport.value = diagnosis.ai_report
+          }
+        }
+      } catch (e) {
+        console.warn('[审批详情] 获取诊断记录失败:', e)
+      }
+    }
+
+    // 最终兜底：尝试用 report_id 直接取
+    if (!fetchedReport.value) {
+      const reportId = data.report_id || data.diagnosis?.report_id
+      if (reportId) {
+        try {
+          const reportRes: any = await getReportApi(reportId)
+          fetchedReport.value = reportRes.data
+        } catch { /* ignore */ }
+      }
+    }
+
     detailVisible.value = true
   } catch { /* handled */ }
 }
@@ -619,7 +735,8 @@ onMounted(() => { loadStats(); fetchData() })
     }
   }
 
-  .detail-section {
+  // 详情区块（:deep 穿透 el-dialog Teleport）
+  :deep(.detail-section) {
     margin-bottom: 20px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--glass-border);
@@ -630,7 +747,7 @@ onMounted(() => { loadStats(); fetchData() })
     }
   }
 
-  .detail-title {
+  :deep(.detail-title) {
     font-size: 14px;
     font-weight: 700;
     color: var(--text-primary);
@@ -713,8 +830,8 @@ onMounted(() => { loadStats(); fetchData() })
     }
   }
 
-  // 报告预览
-  .report-preview {
+  // 报告预览（:deep 穿透 el-dialog Teleport）
+  :deep(.report-preview) {
     font-size: 13px;
     color: var(--text-secondary);
     line-height: 1.8;
@@ -724,6 +841,26 @@ onMounted(() => { loadStats(); fetchData() })
     background: var(--glass-bg);
     border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
+  }
+
+  // 空报告提示
+  :deep(.report-empty) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 28px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+    background: var(--glass-bg);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--glass-border);
+
+    .report-empty-hint {
+      font-size: 12px;
+      color: var(--text-placeholder);
+    }
   }
 
   // 驳回原因/审批意见

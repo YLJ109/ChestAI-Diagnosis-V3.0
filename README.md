@@ -341,8 +341,8 @@
           ▼                   ▼                   ▼
    ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
    │  ONNX 模型    │   │  PyTorch 权重 │   │  外部 LLM API    │
-   │ best_model   │   │ model_*.pth  │   │  通义千问/DeepSeek│
-   │   .onnx       │   │  (GradCAM用) │   │  OpenAI 兼容接口  │
+   │ model_chestX- │   │ model_*.pth  │   │  通义千问/DeepSeek│
+   │ ray14_*.onnx  │   │  (GradCAM用) │   │  OpenAI 兼容接口  │
    └──────────────┘   └──────────────┘   └──────────────────┘
 ```
 
@@ -458,7 +458,7 @@ backend/
 │   ├── heatmaps/               #   Grad-CAM 热力图
 │   └── reports/                #   生成的 PDF 报告
 ├── weights/                    # AI 模型权重
-│   ├── best_model.onnx         #   ONNX 格式 (★ 推荐, 自动优先加载)
+│   ├── model_chestX-ray14_epochs5_81.49_v1.0.onnx  # ONNX 格式 (★ 推荐, 自动优先加载)
 │   └── model_*.pth             #   PyTorch 格式 (Grad-CAM 热力图必需)
 └── scripts/
     └── convert_to_onnx.py      # PyTorch → ONNX 模型格式转换工具

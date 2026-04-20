@@ -304,7 +304,7 @@ def load_model(model_path=None, version_name=None):
                         break
         if not model_path or not os.path.isfile(model_path):
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            model_path = os.path.join(base_dir, 'ChestX-ray14', 'output', 'best_model.pth')
+            model_path = os.path.join(base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
 
     if not os.path.isfile(model_path):
         print(f"[AI服务] 警告: 模型文件不存在: {model_path}")
@@ -337,7 +337,7 @@ def load_model(model_path=None, version_name=None):
                     break
         if pth_path == model_path:  # 还是 .onnx，说明没有 .pth
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            pth_path = os.path.join(base_dir, 'ChestX-ray14', 'output', 'best_model.pth')
+            pth_path = os.path.join(base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
         print(f"[AI服务] 使用 PyTorch 权重: {os.path.basename(pth_path)}")
 
     _use_onnx = False
@@ -564,11 +564,8 @@ def predict_image(image_path, target_disease=None, skip_heatmap=False):
     return {
         'probabilities': probabilities,
         'heatmap_image': heatmap_pil,
-        'model_version': 'DenseNet-121 CheXNet (ONNX)' if _use_onnx else 'DenseNet-121 CheXNet',
+        'model_version': 'model_chestX-ray14_epochs5_81.49_v1.0 (ONNX)' if _use_onnx else 'model_chestX-ray14_epochs5_81.49_v1.0',
     }
-
-
-def predict_images_batch(image_paths, skip_heatmap=True):
     """批量图片推理（多线程预处理 + ONNX/PyTorch 批量推理）
 
     Args:
@@ -619,7 +616,7 @@ def predict_images_batch(image_paths, skip_heatmap=True):
         results.append({
             'probabilities': probabilities,
             'heatmap_image': None,  # 批量模式下不生成热力图
-            'model_version': 'DenseNet-121 CheXNet (ONNX)' if _use_onnx else 'DenseNet-121 CheXNet',
+            'model_version': 'model_chestX-ray14_epochs5_81.49_v1.0 (ONNX)' if _use_onnx else 'model_chestX-ray14_epochs5_81.49_v1.0',
             '_image_pil': images_pil[idx],
             '_probs_raw': probs,
         })
@@ -642,7 +639,7 @@ def _find_pth_path():
             if f.endswith(('.pth', '.pt')):
                 return os.path.join(weights_dir, f)
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    return os.path.join(base_dir, 'ChestX-ray14', 'output', 'best_model.pth')
+    return os.path.join(base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
 
 
 def is_model_loaded():

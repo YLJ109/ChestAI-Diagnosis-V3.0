@@ -180,7 +180,7 @@ const uploadFormRef = ref<any>(null)
 
 const filters = reactive({ keyword: '', status: '' })
 const uploadForm = reactive({
-  version_name: '', architecture: 'DenseNet-121', training_dataset: 'NIH ChestX-ray14',
+  version_name: '', architecture: 'model_chestX-ray14_epochs5_81.49_v1.0', training_dataset: 'NIH ChestX-ray14',
   metrics: '', description: '',
 })
 
@@ -225,7 +225,7 @@ function handleFileRemove() { selectedFile.value = null }
 
 function openUploadDialog() {
   Object.assign(uploadForm, {
-    version_name: '', architecture: 'DenseNet-121', training_dataset: 'NIH ChestX-ray14',
+    version_name: '', architecture: 'model_chestX-ray14_epochs5_81.49_v1.0', training_dataset: 'NIH ChestX-ray14',
     metrics: '', description: '',
   })
   selectedFile.value = null
