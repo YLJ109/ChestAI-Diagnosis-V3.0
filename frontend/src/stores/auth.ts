@@ -1,7 +1,7 @@
 /** 认证状态管理 */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { loginApi, getCurrentUserApi } from '@/api/auth'
+import { loginApi, patientLoginApi, getCurrentUserApi } from '@/api/auth'
 
 function applyTheme(theme: string) {
   const html = document.documentElement
@@ -23,6 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() => userRole.value === 'admin')
   const isDoctor = computed(() => userRole.value === 'doctor')
   const isNurse = computed(() => userRole.value === 'nurse')
+  const isPatient = computed(() => userRole.value === 'patient')
 
   async function login(username: string, password: string) {
     const res: any = await loginApi({ username, password })
@@ -33,6 +34,14 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(res.data.user))
     localStorage.setItem('theme', theme.value)
     applyTheme(theme.value)
+  }
+
+  async function patientLogin(patientNo: string, loginMethod = 'patient_no') {
+    const res: any = await patientLoginApi({ patient_no: patientNo, login_method: loginMethod })
+    token.value = res.data.token
+    user.value = res.data.user
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('user', JSON.stringify(res.data.user))
   }
 
   async function fetchUser() {
@@ -69,5 +78,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   init()
 
-  return { token, user, theme, isLoggedIn, userRole, isAdmin, isDoctor, isNurse, login, fetchUser, logout, setTheme }
+  return { token, user, theme, isLoggedIn, userRole, isAdmin, isDoctor, isNurse, isPatient, login, patientLogin, fetchUser, logout, setTheme }
 })

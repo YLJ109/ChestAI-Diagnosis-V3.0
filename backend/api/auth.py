@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 from models.user import User
+from models.patient import Patient
 from models.settings import UserPreference, LoginSession
 from models.audit import AuditLog
 from utils.auth import generate_token, token_required, role_required
@@ -60,6 +61,53 @@ def login():
             'token': token,
             'user': user.to_dict(),
             'theme': pref.theme if pref else 'light',
+        }
+    })
+
+
+@auth_bp.route('/patient-login', methods=['POST'])
+def patient_login():
+    """患者登录（患者编号 + 可选验证方式）"""
+    data = request.get_json()
+    patient_no = data.get('patient_no', '').strip()
+    login_method = data.get('login_method', 'patient_no')  # patient_no / qrcode / face
+
+    if not patient_no:
+        return jsonify({'code': 400, 'message': '请输入患者编号'}), 400
+
+    patient = Patient.query.filter_by(patient_no=patient_no).first()
+    if not patient:
+        return jsonify({'code': 404, 'message': '未找到该患者编号，请确认后重试'}), 404
+
+    # 生成患者Token（role=patient）
+    token = generate_token(
+        user_id=patient.id,
+        role='patient',
+        username=f"patient_{patient.patient_no}"
+    )
+
+    # 记录审计日志
+    _log_audit(
+        None, f"PATIENT:{patient.patient_no}", 'PATIENT_LOGIN',
+        'patient', patient.id, request.remote_addr
+    )
+
+    return jsonify({
+        'code': 200,
+        'data': {
+            'token': token,
+            'user': {
+                'id': patient.id,
+                'username': f"patient_{patient.patient_no}",
+                'real_name': patient.name,
+                'role': 'patient',
+                'patient_no': patient.patient_no,
+                'name': patient.name,
+                'gender': patient.gender,
+                'age': patient.age,
+                'phone': patient.phone,
+            },
+            'login_method': login_method,
         }
     })
 

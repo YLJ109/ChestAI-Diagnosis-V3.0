@@ -3,12 +3,29 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
+  // ===== 公开页面 =====
   {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/login/LoginPage.vue'),
-    meta: { title: '登录', public: true },
+    meta: { title: '医护登录', public: true },
   },
+  {
+    path: '/patient-login',
+    name: 'PatientLogin',
+    component: () => import('@/views/login/PatientLoginPage.vue'),
+    meta: { title: '患者登录', public: true },
+  },
+
+  // ===== 患者门户（独立布局，与医护系统完全隔离）=====
+  {
+    path: '/patient',
+    name: 'PatientPortal',
+    component: () => import('@/views/patient/PatientPage.vue'),
+    meta: { title: '患者门户', role: 'patient' },
+  },
+
+  // ===== 医护人员系统（MainLayout）=====
   {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
@@ -58,6 +75,8 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+
+  // ===== 管理后台（AdminLayout）=====
   {
     path: '/admin',
     component: () => import('@/layouts/AdminLayout.vue'),
@@ -115,7 +134,7 @@ const router = createRouter({
   routes,
 })
 
-// 路由守卫
+// 路由守卫 - 完全隔离医护和患者
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   const userStr = localStorage.getItem('user')
@@ -128,19 +147,43 @@ router.beforeEach((to, _from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || '胸影智诊V3.0'} - 胸影智诊`
 
-  // 公开页面不需要认证
+  // ========== 公开页面 ==========
   if (to.meta.public) {
     if (token) {
-      next('/dashboard')
+      // 已登录：根据角色跳转到对应首页，不能停留在登录页
+      if (userRole === 'patient') {
+        next('/patient')
+      } else {
+        next('/dashboard')
+      }
       return
     }
     next()
     return
   }
 
-  // 未登录跳转登录页
+  // ========== 未登录 ==========
   if (!token) {
     next('/login')
+    return
+  }
+
+  // ========== 患者权限隔离 ==========
+  if (userRole === 'patient') {
+    // 患者只能访问 /patient 页面
+    if (to.meta.role === 'patient') {
+      next()
+    } else {
+      // 患者试图访问医护页面 → 强制跳回患者门户
+      next('/patient')
+    }
+    return
+  }
+
+  // ========== 医护人员权限 ==========
+  // 患者专属页面，医护人员无法访问
+  if (to.meta.role === 'patient') {
+    next('/dashboard')
     return
   }
 

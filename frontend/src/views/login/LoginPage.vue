@@ -1,4 +1,4 @@
-/** 登录页面 - 玻璃拟态深色科技风 */
+/** 登录页面 - 医护人员（玻璃拟态深色科技风） */
 <template>
   <div class="login-page">
     <div class="bg-glow glow-1"></div>
@@ -38,12 +38,19 @@
           </el-form-item>
         </el-form>
 
+        <!-- 患者入口 -->
+        <div class="patient-entry">
+          <span class="entry-divider">或</span>
+          <el-button text type="primary" class="entry-link" @click="goPatientLogin">
+            <el-icon><Avatar /></el-icon>
+            患者自助终端入口
+          </el-button>
+        </div>
+
         <!-- 底部信息 -->
         <div class="login-footer">
           <div class="footer-disclaimer">
-            <el-icon :size="14">
-              <Warning />
-            </el-icon>
+            <el-icon :size="14"><Warning /></el-icon>
             <span>AI诊断结果仅供参考，最终诊断以执业医师审核为准</span>
           </div>
           <div class="footer-tech">
@@ -59,7 +66,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Warning } from '@element-plus/icons-vue'
+import { Warning, Avatar } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
@@ -89,6 +96,10 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+}
+
+function goPatientLogin() {
+  router.push('/patient-login')
 }
 </script>
 
@@ -123,6 +134,7 @@ async function handleLogin() {
   padding: 48px 40px !important;
 }
 
+/* ===== 品牌区域 ===== */
 .login-brand {
   text-align: center;
   margin-bottom: 36px;
@@ -165,6 +177,7 @@ async function handleLogin() {
   letter-spacing: 0.5px;
 }
 
+/* ===== 表单 ===== */
 .login-form {
   margin-top: 32px;
 }
@@ -178,6 +191,33 @@ async function handleLogin() {
   border-radius: var(--radius-md) !important;
 }
 
+/* ===== 患者入口 ===== */
+.patient-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.entry-divider {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.entry-link {
+  font-size: 13px;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.entry-link:hover {
+  color: #67e8f9;
+}
+
+/* ===== 底部 ===== */
 .login-footer {
   margin-top: 32px;
   text-align: center;

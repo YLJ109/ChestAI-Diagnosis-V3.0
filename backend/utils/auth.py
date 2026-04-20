@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import request, jsonify, current_app
 from models.user import User
+from models.patient import Patient
 
 
 def generate_token(user_id, role, username):
@@ -31,7 +32,7 @@ def decode_token(token):
 
 
 def token_required(f):
-    """Token验证装饰器"""
+    """Token验证装饰器（支持医护人员和患者）"""
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
@@ -46,13 +47,26 @@ def token_required(f):
         if not payload:
             return jsonify({'code': 401, 'message': 'Token无效或已过期'}), 401
 
-        user = User.query.get(payload['user_id'])
-        if not user or user.status != 'active':
-            return jsonify({'code': 401, 'message': '用户不存在或已被禁用'}), 401
+        role = payload.get('role', '')
+        user_id = payload['user_id']
 
-        request.current_user = user
-        request.current_user_id = payload['user_id']
-        request.current_user_role = payload['role']
+        if role == 'patient':
+            # 患者登录：从Patient表查询
+            patient = Patient.query.get(user_id)
+            if not patient:
+                return jsonify({'code': 401, 'message': '患者信息不存在'}), 401
+            request.current_user = patient
+            request.current_user_id = user_id
+            request.current_user_role = 'patient'
+        else:
+            # 医护人员：从User表查询
+            user = User.query.get(user_id)
+            if not user or user.status != 'active':
+                return jsonify({'code': 401, 'message': '用户不存在或已被禁用'}), 401
+            request.current_user = user
+            request.current_user_id = user_id
+            request.current_user_role = role
+
         return f(*args, **kwargs)
     return decorated
 

@@ -4,6 +4,9 @@ import http from './index'
 export const loginApi = (data: { username: string; password: string }) =>
   http.post('/auth/login', data)
 
+export const patientLoginApi = (data: { patient_no: string; login_method?: string }) =>
+  http.post('/auth/patient-login', data)
+
 export const registerApi = (data: any) =>
   http.post('/auth/register', data)
 
