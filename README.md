@@ -12,9 +12,9 @@
 
 **胸部 X 光 AI 智能辅助诊断系统** — 基于 DenseNet-121 + ONNX 加速推理 + 大语言模型的全栈医学影像 AI 平台
 
-[功能特性](#-功能特性) · [系统截图](#-系统截图) · [快速开始](#-快速开始) · [部署指南](#-部署指南) · [API 文档](#-api-接口文档)
+[功能特性](#功能特性) · [系统截图](#系统截图) · [快速开始](#快速开始) · [部署指南](#部署指南) · [API 文档](#api-接口文档)
 
-<img src="ProjectImage/登录界面.png" alt="登录界面" width="900"/>
+<img src="ProjectImage/登录.png" alt="登录界面" width="900"/>
 
 </div>
 
@@ -22,24 +22,24 @@
 
 ## 目录
 
-- [项目简介](#-项目简介)
-- [版本演进](#-版本演进)
-- [功能特性](#-功能特性)
-- [系统截图](#-系统截图)
-- [技术架构](#-技术架构)
-- [性能指标](#-性能指标)
-- [模块说明](#-模块说明)
-- [数据库设计](#-数据库设计)
-- [API 接口文档](#-api-接口文档)
-- [快速开始](#-快速开始)
-- [部署指南](#-部署指南)
-- [配置说明](#-配置说明)
-- [默认账号](#-默认账号)
-- [常见问题](#-常见问题-faq)
-- [安全说明](#-安全说明)
-- [已知限制](#-已知限制)
-- [开发路线图](#-开发路线图)
-- [项目结构](#-项目结构)
+- [项目简介](#项目简介)
+- [版本演进](#版本演进)
+- [功能特性](#功能特性)
+- [系统截图](#系统截图)
+- [技术架构](#技术架构)
+- [性能指标](#性能指标)
+- [模块说明](#模块说明)
+- [数据库设计](#数据库设计)
+- [API 接口文档](#api-接口文档)
+- [快速开始](#快速开始)
+- [部署指南](#部署指南)
+- [配置说明](#配置说明)
+- [默认账号](#默认账号)
+- [常见问题](#常见问题-faq)
+- [安全说明](#安全说明)
+- [已知限制](#已知限制)
+- [开发路线图](#开发路线图)
+- [项目结构](#项目结构)
 
 ---
 
@@ -47,12 +47,12 @@
 
 胸影智诊 V3.0 是一套面向医疗机构的全栈 **AI 辅助胸部 X 光影像诊断平台**。系统基于 **DenseNet-121 (CheXNet)** 深度学习模型，支持对 **14 种胸部疾病** 进行多标签概率预测，并结合大语言模型（LLM）自动生成专业放射学诊断报告。
 
-### 为什么选择胸影智诊？
+### 核心优势
 
 | 维度 | 能力 |
 |:-----|:-----|
 | **AI 精度** | 基于 ChestX-ray14 数据集训练的 DenseNet-121，AUC 达到 0.8149 |
-| **推理速度** | ONNX Runtime 加速，比原生 PyTorch 快 **2~5 倍** |
+| **推理速度** | ONNX Runtime 加速，比原生 PyTorch 快 2~5 倍 |
 | **可解释性** | Grad-CAM 热力图可视化，直观展示 AI 关注区域 |
 | **报告质量** | LLM (通义千问/DeepSeek) 生成专业放射学报告 (CRISPE 提示框架) |
 | **批量处理** | 多线程并行预处理 + 批量推理，数十张影像一键处理 |
@@ -78,31 +78,31 @@
 
 ## 版本演进
 
-### V3.0 当前版本 (2026.04)
+### V2.0 → V3.0 升级总览
 
-> 相比 V2.0 的核心升级
+> 从传统单体应用到现代化全栈平台的全面重构
 
 | 升级项 | V2.0 | V3.0 |
 |:-------|:-----|:-----|
-| **前端框架** | Vue 2 + Options API | **Vue 3 + Composition API + `<script setup>`** |
-| **开发语言** | JavaScript | **TypeScript (严格类型)** |
-| **构建工具** | Webpack | **Vite (HMR 极速热更新)** |
-| **UI 组件库** | Element UI | **Element Plus (全新设计语言)** |
-| **状态管理** | Vuex | **Pinia (更轻量, 更好的 TS 支持)** |
-| **AI 推理引擎** | PyTorch 单引擎 | **ONNX 优先 + PyTorch 回退 (双引擎)** |
-| **推理加速** | 无 | **ONNX Runtime (2-5x 加速) + GPU/DirectML 支持** |
-| **GPU 方案** | 仅 CUDA | **CUDA / DirectML / CPU 自动检测** |
-| **批量诊断** | 同步串行处理 | **异步多线程 + 实时进度轮询 + 可取消** |
-| **热力图生成** | 随推理同步生成 | **懒加载 (按需加载 PyTorch, 节省显存)** |
-| **大模型集成** | 固定单一模型 | **多 LLM 配置管理 + AES 加密存储 + 优先级切换** |
-| **AI 咨询** | 无 | **SSE 流式对话 + 5 种医生角色切换** |
-| **智能分诊** | 无 | **症状分析 + 生命体征 + 分诊评估** |
-| **诊断审批** | 无 | **完整审批工作流 (待审/通过/驳回)** |
-| **审计日志** | 基础记录 | **29+ 操作类型中文标签 + 自动清理** |
-| **主题系统** | 单一主题 | **深色/浅色双主题 + CSS 变量动态切换** |
-| **布局** | 单一布局 | **业务端 + 管理端双布局分离** |
-| **文件命名** | 手动录入 | **智能解析 (`P编号-姓名-性别-年龄-症状-序号.png`)** |
-| **数据库锁** | 频繁死锁 | **自动重试机制 + WAL 模式优化** |
+| **前端框架** | Vue 2 + Options API | Vue 3 + Composition API + `<script setup>` |
+| **开发语言** | JavaScript | TypeScript (严格类型) |
+| **构建工具** | Webpack | Vite (HMR 极速热更新) |
+| **UI 组件库** | Element UI | Element Plus (全新设计语言) |
+| **状态管理** | Vuex | Pinia (更轻量, 更好的 TS 支持) |
+| **AI 推理引擎** | PyTorch 单引擎 | ONNX 优先 + PyTorch 回退 (双引擎) |
+| **推理加速** | 无 | ONNX Runtime (2-5x 加速) + GPU/DirectML 支持 |
+| **GPU 方案** | 仅 CUDA | CUDA / DirectML / CPU 自动检测 |
+| **批量诊断** | 同步串行处理 | 异步多线程 + 实时进度轮询 + 可取消 |
+| **热力图生成** | 随推理同步生成 | 懒加载 (按需加载 PyTorch, 节省显存) |
+| **大模型集成** | 固定单一模型 | 多 LLM 配置管理 + AES 加密存储 + 优先级切换 |
+| **AI 咨询** | 无 | SSE 流式对话 + 5 种医生角色切换 |
+| **智能分诊** | 无 | 症状分析 + 生命体征 + 分诊评估 |
+| **诊断审批** | 无 | 完整审批工作流 (待审/通过/驳回) |
+| **审计日志** | 基础记录 | 29+ 操作类型中文标签 + 自动清理 |
+| **主题系统** | 单一主题 | 深色/浅色双主题 + CSS 变量动态切换 |
+| **布局** | 单一布局 | 业务端 + 管理端双布局分离 |
+| **文件命名** | 手动录入 | 智能解析 (`P编号-姓名-性别-年龄-症状-序号.png`) |
+| **数据库锁** | 频繁死锁 | 自动重试机制 + WAL 模式优化 |
 
 ---
 
@@ -125,9 +125,8 @@
 #### 2. 诊断中心
 
 <p align="center">
-  <img src="ProjectImage/诊断中心-空.png" alt="诊断中心-空" width="280"/>
-  <img src="ProjectImage/诊断结果-检测结果.png" alt="检测结果" width="280"/>
-  <img src="ProjectImage/诊断中心-生成报告.png" alt="生成报告" width="280"/>
+  <img src="ProjectImage/诊断中心.png" alt="诊断中心" width="280"/>
+  <img src="ProjectImage/历史诊断.png" alt="检测结果" width="280"/>
 </p>
 
 - 拖拽或点击上传胸部 X 光影像（PNG / JPG / JPEG）
@@ -150,9 +149,7 @@
 #### 3. 批量诊断
 
 <p align="center">
-  <img src="ProjectImage/批量诊断-空.png" alt="批量诊断-空" width="280"/>
-  <img src="ProjectImage/批量诊断-选择影像.png" alt="选择影像" width="280"/>
-  <img src="ProjectImage/批量诊断-检测结果与生成报告.png" alt="批量结果" width="280"/>
+  <img src="ProjectImage/批量诊断.png" alt="批量诊断" width="800"/>
 </p>
 
 - 一次选择多张影像，每张独立患者卡片展示
@@ -166,9 +163,7 @@
 #### 4. 智能分诊
 
 <p align="center">
-  <img src="ProjectImage/智能分诊-空.png" alt="智能分诊-空" width="280"/>
-  <img src="ProjectImage/智能分诊-分诊评估.png" alt="分诊评估" width="280"/>
-  <img src="ProjectImage/智能分诊-症状详情.png" alt="症状详情" width="280"/>
+  <img src="ProjectImage/智能分诊.png" alt="智能分诊" width="800"/>
 </p>
 
 - **15+ 种常见症状**多选：咳嗽 / 胸痛 / 呼吸困难 / 咯血 / 发热 / 咳痰等
@@ -183,12 +178,12 @@
 #### 5. AI 医学咨询
 
 <p align="center">
-  <img src="ProjectImage/AI咨询-空.png" alt="AI咨询-空" width="380"/>
-  <img src="ProjectImage/AI咨询-AI回复.png" alt="AI咨询回复" width="380"/>
+  <img src="ProjectImage/AI咨询.png" alt="AI咨询" width="800"/>
 </p>
 
 - **SSE 流式对话** — 实时打字效果，用户体验流畅
 - **5 种医生角色**切换：
+
   | 角色 | 专业领域 |
   |:-----|:---------|
   | 放射科专家 | 影像解读、疾病鉴别诊断 |
@@ -196,16 +191,12 @@
   | 胸外科专家 | 手术指征评估、术后管理 |
   | 急诊科专家 | 急危重症识别和处理 |
   | 全科顾问 | 综合性医学咨询 |
+
 - 会话管理：新建 / 切换 / 删除会话
 - Markdown 格式渲染回复内容
 - 保留最近 10 轮对话上下文
 
 #### 6. 诊断历史 & 7. 诊断审批
-
-<p align="center">
-  <img src="ProjectImage/历史诊断.png" alt="诊断历史" width="420"/>
-  <img src="ProjectImage/诊断审批.png" alt="诊断审批" width="420"/>
-</p>
 
 **诊断历史：**
 - 所有诊断记录列表（支持分页）
@@ -223,13 +214,13 @@
 ### 管理端 (7 大功能模块)
 
 <p align="center">
-  <img src="ProjectImage/后台管理-系统概览.png" alt="系统概览" width="280"/>
+  <img src="ProjectImage/后台管理-系统概述.png" alt="系统概览" width="280"/>
   <img src="ProjectImage/后台管理-用户管理.png" alt="用户管理" width="280"/>
   <img src="ProjectImage/后台管理-患者管理.png" alt="患者管理" width="280"/>
 </p>
 <p align="center">
-  <img src="ProjectImage/后台管理-权重文件管理.png" alt="权重管理" width="280"/>
-  <img src="ProjectImage/后台管理-大模型API管理.png" alt="LLM管理" width="280"/>
+  <img src="ProjectImage/后台管理-模型管理.png" alt="权重管理" width="280"/>
+  <img src="ProjectImage/后台管理-大模型API.png" alt="LLM管理" width="280"/>
   <img src="ProjectImage/后台管理-审计日志.png" alt="审计日志" width="280"/>
 </p>
 <p align="center">
@@ -250,10 +241,6 @@
 
 ### 通用特性
 
-<p align="center">
-  <img src="ProjectImage/深色模式.png" alt="深色模式" width="600"/>
-</p>
-
 - **深色 / 浅色主题** — 全局 CSS 变量主题系统，偏好持久化到数据库
 - **响应式侧边栏** — 可折叠导航栏，图标模式节省空间
 - **JWT 身份认证** — Bearer Token，30 天有效期
@@ -261,6 +248,34 @@
 - **路由守卫** — 未登录跳转登录页，无权限拦截回业务端
 - **全局错误处理** — 统一 Toast 提示 + 网络异常友好提示
 - **玻璃拟态风格** — 登录页毛玻璃效果，科技感视觉设计
+
+---
+
+## 系统截图
+
+### 业务端截图
+
+| 页面 | 截图 |
+|:-----|:-----|
+| 登录界面 | ![登录](ProjectImage/登录.png) |
+| 数据看板 | ![数据看板](ProjectImage/数据看板.png) |
+| 诊断中心 | ![诊断中心](ProjectImage/诊断中心.png) |
+| 批量诊断 | ![批量诊断](ProjectImage/批量诊断.png) |
+| 智能分诊 | ![智能分诊](ProjectImage/智能分诊.png) |
+| AI 咨询 | ![AI咨询](ProjectImage/AI咨询.png) |
+| 历史诊断 | ![历史诊断](ProjectImage/历史诊断.png) |
+
+### 管理端截图
+
+| 页面 | 截图 |
+|:-----|:-----|
+| 系统概览 | ![系统概览](ProjectImage/后台管理-系统概述.png) |
+| 用户管理 | ![用户管理](ProjectImage/后台管理-用户管理.png) |
+| 患者管理 | ![患者管理](ProjectImage/后台管理-患者管理.png) |
+| 权重管理 | ![权重管理](ProjectImage/后台管理-模型管理.png) |
+| 大模型 API | ![LLM管理](ProjectImage/后台管理-大模型API.png) |
+| 审计日志 | ![审计日志](ProjectImage/后台管理-审计日志.png) |
+| 系统设置 | ![系统设置](ProjectImage/后台管理-系统设置.png) |
 
 ---
 
@@ -310,7 +325,7 @@
 │  │  Report │ BatchRecord │ ModelWeight │ LlmConfig          │  │
 │  │  TriageRecord │ AiChatSession │ AiChatMessage            │  │
 │  │  AuditLog │ SystemSetting │ UserPreference               │  │
-│  └──────────────────────────────┬───────────────────────────┘  │
+│  └──────────────────────────────┬──────────────────────────┘  │
 │                                 │                               │
 │  ┌─────────────────────────────▼───────────────────────────┐  │
 │  │                    SQLite (aixray.db)                     │  │
@@ -355,7 +370,6 @@
 | **API 限流** | Flask-Limiter 3.5 | 200 次/分钟 默认限制 |
 | **加密库** | Cryptography 42.0 | AES-256 对称加密（API Key 存储） |
 | **生产 WSGI** | Gunicorn 21 + Gevent 24 | 异步高并发 Worker |
-| **进程管理** | Systemd | 守护进程、开机自启、日志管理 |
 
 ---
 
@@ -428,8 +442,8 @@ backend/
 │   └── settings.py             #   system_settings + user_preferences + login_sessions
 │
 ├── services/                   # ★ 核心业务服务
-│   ├── ai_service.py           #   AI 推理引擎 (650行): ONNX/PyTorch/Grad-CAM/批量
-│   ├── llm_service.py          #   LLM 服务 (273行): 报告生成/流式对话/分诊分析
+│   ├── ai_service.py           #   AI 推理引擎: ONNX/PyTorch/Grad-CAM/批量
+│   ├── llm_service.py          #   LLM 服务: 报告生成/流式对话/分诊分析
 │   ├── report_service.py       #   报告组装服务
 │   └── pdf_service.py          #   PDF 生成服务
 │
@@ -474,7 +488,21 @@ frontend/
 │   │
 │   ├── api/                    # API 服务层 (Axios 封装, 16 个模块)
 │   │   ├── index.ts            #     Axios 实例 + 请求/响应拦截器
-│   │   ├── auth.ts ~ settings.ts  # ... 各业务模块 API 函数
+│   │   ├── auth.ts             #     认证 API
+│   │   ├── users.ts            #     用户管理 API
+│   │   ├── patients.ts         #     患者管理 API
+│   │   ├── diagnose.ts         #     诊断 API
+│   │   ├── reports.ts          #     报告 API
+│   │   ├── batch.ts            #     批量诊断 API
+│   │   ├── triage.ts           #     智能分诊 API
+│   │   ├── chat.ts             #     AI 咨询 API
+│   │   ├── approvals.ts        #     审批 API
+│   │   ├── model-weights.ts    #     权重管理 API
+│   │   ├── llm-configs.ts      #     LLM 配置 API
+│   │   ├── llm.ts              #     LLM 调用 API
+│   │   ├── audit.ts            #     审计日志 API
+│   │   ├── settings.ts         #     系统设置 API
+│   │   └── dashboard.ts        #     数据看板 API
 │   │
 │   ├── layouts/                # 布局组件
 │   │   ├── MainLayout.vue      #     业务端: 侧边栏 + 顶栏 + 内容 + 密码弹窗
@@ -489,7 +517,14 @@ frontend/
 │   │   ├── chat/ChatPage.vue           # SSE 流式对话
 │   │   ├── history/HistoryPage.vue     # 诊断记录列表
 │   │   ├── approval/ApprovalPage.vue   # 审批工作流
-│   │   ├── admin/*.vue                 # 7 个管理页面
+│   │   └── admin/                     # 7 个管理页面
+│   │       ├── OverviewPage.vue        #   系统概览
+│   │       ├── UsersPage.vue           #   用户管理
+│   │       ├── PatientsPage.vue        #   患者管理
+│   │       ├── ModelsPage.vue          #   权重文件管理
+│   │       ├── LlmPage.vue             #   大模型 API 管理
+│   │       ├── AuditPage.vue           #   审计日志
+│   │       └── SettingsPage.vue        #   系统设置
 │   │
 │   ├── styles/variables.css    # 全局 CSS 变量 (主题色/间距/圆角/阴影/字体)
 │   ├── components/             # 公共组件
@@ -565,7 +600,7 @@ frontend/
 | id_card | String(18) | 身份证号 |
 | phone / address | String | 联系方式 / 住址 |
 | emergency_contact / phone | String | 紧急联系人 |
-| blood_type | String(5) | 血型 (A/B/AB/O ±) |
+| blood_type | String(5) | 血型 (A/B/AB/O +/-) |
 | height / weight | Float | 身高(cm) / 体重(kg) |
 | medical_history | Text JSON | 既往病史 (数组/对象) |
 | allergy_history | Text | 过敏史 |
@@ -777,7 +812,7 @@ frontend/
 |:-----|:---------|:---------|
 | 操作系统 | Windows 10+ / Ubuntu 20.04+ | Windows 11 / Ubuntu 22.04 |
 | Python | 3.9+ | 3.10 / 3.11 |
-| Node.js | 18+ | 20 LTS (LTS) |
+| Node.js | 18+ | 20 LTS |
 | npm | 9+ | 10+ |
 | 内存 | 8 GB | 16 GB+ |
 | 磁盘 | 5 GB 可用 | 10 GB+ (含模型权重) |
@@ -793,8 +828,11 @@ cd AIX-RayIntelligentDiagnosisSystemV3.0
 # ===== 第 2 步: 启动后端 =====
 cd backend
 python -m venv venv                          # 创建虚拟环境
-# Windows: venv\Scripts\activate
-# Linux/macOS: source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
 pip install -r requirements.txt               # 安装依赖
 python init_db.py                             # 初始化数据库 (种子数据)
 python app.py                                 # 启动后端 → http://localhost:5000
@@ -812,7 +850,8 @@ npm run dev                                   # 启动前端 → http://localhos
 ```bash
 # NVIDIA GPU:
 pip install onnxruntime-gpu
-export AI_DEVICE=cuda
+set AI_DEVICE=cuda          # Windows
+# export AI_DEVICE=cuda     # Linux/macOS
 
 # AMD GPU / Windows DirectX:
 pip install onnxruntime-directml
@@ -1078,7 +1117,7 @@ docker-compose up -d --build
 | 护士 | `nurse_sun` | `nurse123` | 孙小美 | 放射科 |
 | 护士 | `nurse_zhao` | `nurse123` | 赵雅婷 | 呼吸内科 |
 
-> 同时预置了 **10 名示例患者** (P20260315001 ~ P20260315010)，附带完整的个人信息、既往史和过敏史，以及对应的示例 X 光影像文件（位于 `batch_sample_images/` 目录）。
+> 同时预置了 **10 名示例患者** (P20260315001 ~ P20260315010)，附带完整的个人信息、既往史和过敏史。
 
 ---
 
@@ -1174,7 +1213,7 @@ docker-compose up -d --build
 - **SQL 注入防护**: 全量使用 SQLAlchemy ORM 参数化查询
 - **XSS 防护**: Vue 3 默认转义渲染内容
 - **CSRF 防护**: API 使用 Bearer Token 认证（无 Cookie 依赖）
-- **文件上传限制**: 白名单扩展名 (png/jpg/jpeg/dcm/dicom) + 500MB 大小上限
+- **文件上传限制**: 白名单扩展名 (png/jpg/jpeg/dcm/dicom) + 50MB 大小上限
 - **API 限流**: Flask-Limiter 默认 200 次/分钟/IP
 
 ### 生产环境安全检查清单
@@ -1255,7 +1294,7 @@ AIX-RayIntelligentDiagnosisSystemV3.0/
 │   ├── public/favicon.svg       # 网站图标
 │   ├── src/
 │   │   ├── api/                 # 16 个 API 服务模块
-│   │   ├── views/               # 15 个页面组件
+│   │   ├── views/               # 15 个页面组件 (含 admin 子目录 7 个)
 │   │   ├── layouts/             # 2 个布局组件
 │   │   ├── stores/              # 3 个 Pinia Store
 │   │   ├── router/              # 路由 + 守卫
@@ -1267,18 +1306,17 @@ AIX-RayIntelligentDiagnosisSystemV3.0/
 │   ├── vite.config.ts           # Vite 配置
 │   └── tsconfig.json            # TS 配置
 │
-├── ProjectImage/                # 项目截图 (24 张)
-│   ├── 登录界面.png
+├── ProjectImage/                # 项目截图 (13 张)
+│   ├── 登录.png
 │   ├── 数据看板.png
-│   ├── 诊断中心-*.png           # (3 张)
-│   ├── 批量诊断-*.png           # (3 张)
-│   ├── 智能分诊-*.png           # (3 张)
-│   ├── AI咨询-*.png             # (2 张)
-│   ├── 诊断审批.png / 历史诊断.png
-│   ├── 深色模式.png
+│   ├── 诊断中心.png
+│   ├── 批量诊断.png
+│   ├── 智能分诊.png
+│   ├── AI咨询.png
+│   ├── 历史诊断.png
 │   └── 后台管理-*.png           # (7 张)
 │
-├── batch_sample_images/         # 示例 X 光影像 (用于测试)
+├── .gitignore                   # Git 忽略规则
 ├── .env                         # 环境变量 (需自行创建)
 └── README.md                    # 本文档
 ```

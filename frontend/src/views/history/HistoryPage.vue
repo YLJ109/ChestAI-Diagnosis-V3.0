@@ -197,6 +197,12 @@
             </div>
 
             <div class="prob-section">
+              <!-- DEBUG: 显示原始数据长度，确认后删除 -->
+              <div style="font-size:11px;color:#999;margin-bottom:8px" v-if="detailTop5Probs.length === 0">
+                [DEBUG] probabilities 长度={{ currentRecord?.probabilities?.length }},
+                disease_probabilities 长度={{ currentRecord?.disease_probabilities?.length }},
+                detailTop5Probs 长度={{ detailTop5Probs.length }}
+              </div>
               <div class="prob-row" v-for="p in detailTop5Probs" :key="p.disease_code">
                 <span class="prob-label">{{ p.disease_name_zh }}</span>
                 <div class="prob-bar-wrap">
@@ -206,7 +212,7 @@
                     </div>
                   </div>
                 </div>
-                <span class="prob-val">{{ (p.probability * 100).toFixed(1) }}%</span>
+                <span class="prob-val" :style="{ color: probColor(p.disease_code) }">{{ (p.probability * 100).toFixed(1) }}%</span>
               </div>
             </div>
 
@@ -354,10 +360,18 @@ function topResultClass(row: any): string {
   return 'abnormal'
 }
 
-// 详情对话框的推导属性
+// 详情对话框的推导属性 — 兼容多种后端返回格式
 const detailSortedProbs = computed(() => {
-  if (!currentRecord.value?.probabilities?.length) return []
-  return [...currentRecord.value.probabilities].sort((a: any, b: any) => b.probability - a.probability)
+  const r = currentRecord.value
+  if (!r) return []
+  // 依次尝试各种可能的字段名（不同API版本/接口可能返回不同key）
+  const probs = r.probabilities
+    || r.disease_probabilities
+    || r.top_diseses
+    || r.topDiseases
+    || []
+  if (!probs.length) return []
+  return [...probs].sort((a: any, b: any) => b.probability - a.probability)
 })
 
 const detailTopResult = computed(() => {
@@ -420,6 +434,11 @@ async function viewDetail(row: any) {
   try {
     const res: any = await getDiagnosisApi(row.id)
     currentRecord.value = res.data
+    // DEBUG: 打印 API 返回的完整数据结构，确认概率字段名
+    console.log('[HistoryDetail] API response keys:', Object.keys(res.data || {}))
+    console.log('[HistoryDetail] probabilities:', res.data?.probabilities)
+    console.log('[HistoryDetail] disease_probabilities:', res.data?.disease_probabilities)
+    console.log('[HistoryDetail] top_diseses:', res.data?.top_diseses)
     detailVisible.value = true
   } catch { /* handled */ }
 }
@@ -487,8 +506,8 @@ async function printRecord(r: any) {
   const imageSrc = imgUrl(r.image_path)
   const heatmapSrc = imgUrl(r.heatmap_path)
 
-  // 推导主结果
-  const probs = r.probabilities || []
+  // 推导主结果 — 兼容多种后端返回格式
+  const probs = r.probabilities || r.disease_probabilities || r.top_diseses || r.topDiseases || []
   const sorted = [...probs].sort((a: any, b: any) => b.probability - a.probability)
   const isNormal = !sorted.length || sorted[0].probability < 0.3
   const resultCn = isNormal ? '正常' : (sorted[0].disease_name_zh || '-')

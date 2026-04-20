@@ -433,8 +433,9 @@ const rules = { patient_id: [{ required: true, message: '请选择患者', trigg
 
 // 从概率数组推导主结果（最高概率 < 0.3 视为正常）
 const sortedProbs = computed(() => {
-  if (!result.value?.probabilities?.length) return []
-  return [...result.value.probabilities].sort((a: any, b: any) => b.probability - a.probability)
+  const probs = result.value?.probabilities || result.value?.disease_probabilities || []
+  if (!probs.length) return []
+  return [...probs].sort((a: any, b: any) => b.probability - a.probability)
 })
 
 const topResult = computed(() => {
