@@ -14,7 +14,7 @@
 
 [功能特性](#功能特性) · [系统截图](#系统截图) · [快速开始](#快速开始) · [部署指南](#部署指南) · [API 文档](#api-接口文档)
 
-<img src="ProjectImage/登录.png" alt="登录界面" width="900"/>
+<img src="ProjectImage/登录界面.png" alt="登录界面" width="900"/>
 
 </div>
 
@@ -125,7 +125,7 @@
 #### 2. 诊断中心
 
 <p align="center">
-  <img src="ProjectImage/诊断中心.png" alt="诊断中心" width="280"/>
+  <img src="ProjectImage/诊断中心-空.png" alt="诊断中心" width="280"/>
   <img src="ProjectImage/历史诊断.png" alt="检测结果" width="280"/>
 </p>
 
@@ -149,7 +149,7 @@
 #### 3. 批量诊断
 
 <p align="center">
-  <img src="ProjectImage/批量诊断.png" alt="批量诊断" width="800"/>
+  <img src="ProjectImage/批量诊断-空.png" alt="批量诊断" width="800"/>
 </p>
 
 - 一次选择多张影像，每张独立患者卡片展示
@@ -163,7 +163,7 @@
 #### 4. 智能分诊
 
 <p align="center">
-  <img src="ProjectImage/智能分诊.png" alt="智能分诊" width="800"/>
+  <img src="ProjectImage/智能分诊-空.png" alt="智能分诊" width="800"/>
 </p>
 
 - **15+ 种常见症状**多选：咳嗽 / 胸痛 / 呼吸困难 / 咯血 / 发热 / 咳痰等
@@ -178,7 +178,7 @@
 #### 5. AI 医学咨询
 
 <p align="center">
-  <img src="ProjectImage/AI咨询.png" alt="AI咨询" width="800"/>
+  <img src="ProjectImage/AI咨询-空.png" alt="AI咨询" width="800"/>
 </p>
 
 - **SSE 流式对话** — 实时打字效果，用户体验流畅
@@ -214,13 +214,13 @@
 ### 管理端 (7 大功能模块)
 
 <p align="center">
-  <img src="ProjectImage/后台管理-系统概述.png" alt="系统概览" width="280"/>
+  <img src="ProjectImage/后台管理-系统概览.png" alt="系统概览" width="280"/>
   <img src="ProjectImage/后台管理-用户管理.png" alt="用户管理" width="280"/>
   <img src="ProjectImage/后台管理-患者管理.png" alt="患者管理" width="280"/>
 </p>
 <p align="center">
-  <img src="ProjectImage/后台管理-模型管理.png" alt="权重管理" width="280"/>
-  <img src="ProjectImage/后台管理-大模型API.png" alt="LLM管理" width="280"/>
+  <img src="ProjectImage/后台管理-权重文件管理.png" alt="权重管理" width="280"/>
+  <img src="ProjectImage/后台管理-大模型API管理.png" alt="LLM管理" width="280"/>
   <img src="ProjectImage/后台管理-审计日志.png" alt="审计日志" width="280"/>
 </p>
 <p align="center">
@@ -257,24 +257,24 @@
 
 | 页面 | 截图 |
 |:-----|:-----|
-| 登录界面 | ![登录](ProjectImage/登录.png) |
+| 登录界面 | ![登录](ProjectImage/登录界面.png) |
 | 数据看板 | ![数据看板](ProjectImage/数据看板.png) |
-| 诊断中心 | ![诊断中心](ProjectImage/诊断中心.png) |
-| 批量诊断 | ![批量诊断](ProjectImage/批量诊断.png) |
-| 智能分诊 | ![智能分诊](ProjectImage/智能分诊.png) |
-| AI 咨询 | ![AI咨询](ProjectImage/AI咨询.png) |
+| 诊断中心 | ![诊断中心](ProjectImage/诊断中心-空.png) |
+| 批量诊断 | ![批量诊断](ProjectImage/批量诊断-空.png) |
+| 智能分诊 | ![智能分诊](ProjectImage/智能分诊-空.png) |
+| AI 咨询 | ![AI咨询](ProjectImage/AI咨询-空.png) |
 | 历史诊断 | ![历史诊断](ProjectImage/历史诊断.png) |
 
 ### 管理端截图
 
 | 页面 | 截图 |
 |:-----|:-----|
-| 系统概览 | ![系统概览](ProjectImage/后台管理-系统概述.png) |
+| 系统概览 | ![系统概览](ProjectImage/后台管理-系统概览.png) |
 | 用户管理 | ![用户管理](ProjectImage/后台管理-用户管理.png) |
 | 患者管理 | ![患者管理](ProjectImage/后台管理-患者管理.png) |
-| 权重管理 | ![权重管理](ProjectImage/后台管理-模型管理.png) |
-| 大模型 API | ![LLM管理](ProjectImage/后台管理-大模型API.png) |
-| 审计日志 | ![审计日志](ProjectImage/后台管理-审计日志.png) |
+| 权重管理 | ![权重管理](ProjectImage/后台管理-权重文件管理.png) |
+| 大模型 API | ![LLM管理](ProjectImage/后台管理-大模型API管理.png) |
+| 审查日志 | ![审计日志](ProjectImage/后台管理-审计日志.png) |
 | 系统设置 | ![系统设置](ProjectImage/后台管理-系统设置.png) |
 
 ---
