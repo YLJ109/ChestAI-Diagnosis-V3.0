@@ -29,7 +29,7 @@ def diagnose_single():
     # 获取参数
     patient_id = request.form.get('patient_id', type=int)
     image_file = request.files.get('image')
-    skip_report = request.form.get('skip_report', 'false').lower() == 'true'
+    skip_report = request.form.get('skip_report', 'true').lower() == 'true'
 
     if not image_file:
         return jsonify({'code': 400, 'message': '请上传影像文件'}), 400
@@ -61,7 +61,8 @@ def diagnose_single():
         # 保存热力图
         heatmap_path = None
         if heatmap_image:
-            heatmap_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'heatmaps')
+            heatmap_dir = os.path.join(
+                current_app.config['UPLOAD_FOLDER'], 'heatmaps')
             os.makedirs(heatmap_dir, exist_ok=True)
             heatmap_filename = f"{uuid.uuid4().hex}_gradcam.png"
             heatmap_path = os.path.join(heatmap_dir, heatmap_filename)
@@ -120,7 +121,8 @@ def diagnose_single():
             patient_info = patient.to_dict() if patient else None
             if patient_info:
                 gender_map = {'male': '男', 'female': '女', 'other': '其他'}
-                patient_info['gender_zh'] = gender_map.get(patient_info.get('gender'), '未知')
+                patient_info['gender_zh'] = gender_map.get(
+                    patient_info.get('gender'), '未知')
 
             report_data = create_diagnosis_report(probabilities, patient_info)
 
@@ -186,9 +188,11 @@ def get_diagnosis(diagnosis_id):
     """获取诊断详情"""
     diagnosis = Diagnosis.query.get_or_404(diagnosis_id)
     probs = DiseaseProbability.query.filter_by(diagnosis_id=diagnosis_id).all()
-    reports = Report.query.filter_by(diagnosis_id=diagnosis_id).order_by(Report.version_no.desc()).all()
+    reports = Report.query.filter_by(diagnosis_id=diagnosis_id).order_by(
+        Report.version_no.desc()).all()
 
-    patient = Patient.query.get(diagnosis.patient_id) if diagnosis.patient_id else None
+    patient = Patient.query.get(
+        diagnosis.patient_id) if diagnosis.patient_id else None
 
     return jsonify({
         'code': 200,

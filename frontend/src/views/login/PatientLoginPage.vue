@@ -4,13 +4,17 @@
     <!-- 顶部栏 -->
     <div class="terminal-header">
       <div class="header-left">
-        <el-icon :size="24" color="#22d3ee"><Monitor /></el-icon>
+        <el-icon :size="24" color="#22d3ee">
+          <Monitor />
+        </el-icon>
         <span class="header-title">患者自助服务终端</span>
       </div>
       <div class="header-right">
         <span class="header-time">{{ currentTime }}</span>
         <el-button text size="small" class="staff-link" @click="goStaffLogin">
-          <el-icon><SwitchButton /></el-icon>
+          <el-icon>
+            <SwitchButton />
+          </el-icon>
           切换医护登录
         </el-button>
       </div>
@@ -33,7 +37,9 @@
 
         <!-- 安全提示 -->
         <div class="security-tips">
-          <el-icon :size="14"><Lock /></el-icon>
+          <el-icon :size="14">
+            <Lock />
+          </el-icon>
           <span>您的隐私数据已加密保护</span>
         </div>
       </div>
@@ -41,28 +47,22 @@
       <!-- 右侧：登录方式 -->
       <div class="login-section">
         <div class="method-tabs">
-          <div
-            class="m-tab"
-            :class="{ active: activeMethod === 'qrcode' }"
-            @click="activeMethod = 'qrcode'"
-          >
-            <el-icon><FullScreen /></el-icon>
+          <div class="m-tab" :class="{ active: activeMethod === 'qrcode' }" @click="activeMethod = 'qrcode'">
+            <el-icon>
+              <FullScreen />
+            </el-icon>
             <span>扫码登录</span>
           </div>
-          <div
-            class="m-tab"
-            :class="{ active: activeMethod === 'face' }"
-            @click="activeMethod = 'face'"
-          >
-            <el-icon><View /></el-icon>
+          <div class="m-tab" :class="{ active: activeMethod === 'face' }" @click="activeMethod = 'face'">
+            <el-icon>
+              <View />
+            </el-icon>
             <span>刷脸登录</span>
           </div>
-          <div
-            class="m-tab"
-            :class="{ active: activeMethod === 'number' }"
-            @click="activeMethod = 'number'"
-          >
-            <el-icon><Ticket /></el-icon>
+          <div class="m-tab" :class="{ active: activeMethod === 'number' }" @click="activeMethod = 'number'">
+            <el-icon>
+              <Ticket />
+            </el-icon>
             <span>编号登录</span>
           </div>
         </div>
@@ -79,7 +79,9 @@
                 <div class="corner corner-br"></div>
                 <div class="scan-line"></div>
                 <div class="scanner-center">
-                  <el-icon :size="56" color="#22d3ee"><FullScreen /></el-icon>
+                  <el-icon :size="56" color="#22d3ee">
+                    <FullScreen />
+                  </el-icon>
                   <p>将二维码放入扫描框内</p>
                   <p class="scanner-hint-sm">支持就诊卡、电子健康卡二维码</p>
                 </div>
@@ -104,21 +106,20 @@
                 <p class="face-hint">请正对摄像头，保持面部在框内</p>
                 <div class="face-status-box" :class="{ checking: faceChecking }">
                   <template v-if="!faceChecking">
-                    <el-icon :size="16"><VideoCamera /></el-icon>
+                    <el-icon :size="16">
+                      <VideoCamera />
+                    </el-icon>
                     <span>点击下方按钮启动人脸识别</span>
                   </template>
                   <template v-else>
-                    <el-icon :size="16" class="is-loading"><Loading /></el-icon>
+                    <el-icon :size="16" class="is-loading">
+                      <Loading />
+                    </el-icon>
                     <span>正在识别中，请勿移动...</span>
                   </template>
                 </div>
-                <el-button
-                  type="primary"
-                  size="large"
-                  class="action-btn"
-                  :loading="faceChecking"
-                  @click="startFaceScan"
-                >
+                <el-button type="primary" size="large" class="action-btn" :loading="faceChecking"
+                  @click="startFaceScan">
                   {{ faceChecking ? '识别中...' : '开始人脸识别' }}
                 </el-button>
               </div>
@@ -130,23 +131,12 @@
             <div class="number-area">
               <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
                 <el-form-item label="患者编号 / 就诊卡号" prop="patient_no">
-                  <el-input
-                    v-model="form.patient_no"
-                    placeholder="请输入您的患者编号或就诊卡号"
-                    prefix-icon="Ticket"
-                    size="large"
-                    clearable
-                    @keyup.enter="handleNumberLogin"
-                  />
+                  <el-input v-model="form.patient_no" placeholder="请输入您的患者编号或就诊卡号" prefix-icon="Ticket" size="large"
+                    clearable @keyup.enter="handleNumberLogin" />
                 </el-form-item>
                 <el-form-item>
-                  <el-button
-                    type="primary"
-                    size="large"
-                    class="action-btn"
-                    :loading="loading"
-                    @click="handleNumberLogin"
-                  >
+                  <el-button type="primary" size="large" class="action-btn" :loading="loading"
+                    @click="handleNumberLogin">
                     <span v-if="!loading">确认登录</span>
                     <span v-else>验证中...</span>
                   </el-button>
@@ -162,7 +152,9 @@
     <!-- 底部状态栏 -->
     <div class="terminal-footer">
       <div class="footer-left">
-        <el-icon :size="14"><InfoFilled /></el-icon>
+        <el-icon :size="14">
+          <InfoFilled />
+        </el-icon>
         <span>本终端仅供患者自助查询使用</span>
       </div>
       <div class="footer-right">
@@ -291,7 +283,7 @@ function goStaffLogin() {
 }
 
 .header-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 1px;
@@ -352,7 +344,7 @@ function goStaffLogin() {
 }
 
 .brand-subtitle {
-  font-size: 15px;
+  font-size: 17px;
   color: var(--text-secondary);
 }
 
@@ -438,8 +430,8 @@ function goStaffLogin() {
   pointer-events: none;
   visibility: hidden;
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 0.35s;
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.35s;
 }
 
 .panel.active {
@@ -453,7 +445,7 @@ function goStaffLogin() {
 .action-btn {
   width: 100%;
   height: 48px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: 2px;
   border-radius: var(--radius-md) !important;
@@ -487,10 +479,38 @@ function goStaffLogin() {
   border-style: solid;
   border-width: 0;
 }
-.corner-tl { top: -1px; left: -1px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 6px; }
-.corner-tr { top: -1px; right: -1px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 6px; }
-.corner-bl { bottom: -1px; left: -1px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 6px; }
-.corner-br { bottom: -1px; right: -1px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 6px; }
+
+.corner-tl {
+  top: -1px;
+  left: -1px;
+  border-top-width: 3px;
+  border-left-width: 3px;
+  border-top-left-radius: 6px;
+}
+
+.corner-tr {
+  top: -1px;
+  right: -1px;
+  border-top-width: 3px;
+  border-right-width: 3px;
+  border-top-right-radius: 6px;
+}
+
+.corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom-width: 3px;
+  border-left-width: 3px;
+  border-bottom-left-radius: 6px;
+}
+
+.corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+  border-bottom-right-radius: 6px;
+}
 
 .scan-line {
   position: absolute;
@@ -502,8 +522,15 @@ function goStaffLogin() {
 }
 
 @keyframes scanMove {
-  0%, 100% { top: 12%; }
-  50% { top: 78%; }
+
+  0%,
+  100% {
+    top: 12%;
+  }
+
+  50% {
+    top: 78%;
+  }
 }
 
 .scanner-center {

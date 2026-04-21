@@ -42,7 +42,9 @@
         <div class="patient-entry">
           <span class="entry-divider">或</span>
           <el-button text type="primary" class="entry-link" @click="goPatientLogin">
-            <el-icon><Avatar /></el-icon>
+            <el-icon>
+              <Avatar />
+            </el-icon>
             患者自助终端入口
           </el-button>
         </div>
@@ -50,7 +52,9 @@
         <!-- 底部信息 -->
         <div class="login-footer">
           <div class="footer-disclaimer">
-            <el-icon :size="14"><Warning /></el-icon>
+            <el-icon :size="14">
+              <Warning />
+            </el-icon>
             <span>AI诊断结果仅供参考，最终诊断以执业医师审核为准</span>
           </div>
           <div class="footer-tech">
@@ -90,7 +94,7 @@ async function handleLogin() {
   try {
     await authStore.login(loginForm.username, loginForm.password)
     ElMessage.success('登录成功')
-    router.push('/dashboard')
+    router.push('/staff/dashboard')
   } catch {
     // error handled by interceptor
   } finally {
@@ -158,7 +162,7 @@ function goPatientLogin() {
 }
 
 .title-version {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 400;
   color: var(--primary);
   margin-left: 4px;
@@ -185,7 +189,7 @@ function goPatientLogin() {
 .login-btn {
   width: 100%;
   height: 48px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: 6px;
   border-radius: var(--radius-md) !important;

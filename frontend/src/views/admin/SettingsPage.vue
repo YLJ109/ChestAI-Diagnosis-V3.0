@@ -4,7 +4,9 @@
     <!-- AI诊断设置 -->
     <div class="glass-card">
       <div class="section-header">
-        <span class="section-icon"><el-icon><Cpu /></el-icon></span>
+        <span class="section-icon"><el-icon>
+            <Cpu />
+          </el-icon></span>
         <span class="section-title">AI诊断设置</span>
         <span class="section-desc">实时生效，无需重启服务</span>
       </div>
@@ -17,9 +19,8 @@
           <div class="setting-control">
             <el-slider v-model="settings.disease_threshold" :min="0.1" :max="0.95" :step="0.05"
               style="flex: 1; max-width: 300px" @change="onSettingChange('disease_threshold')" />
-            <el-input-number v-model="settings.disease_threshold" :min="0.1" :max="0.95"
-              :step="0.05" :precision="2" size="small" style="width: 100px; margin-left: 12px"
-              @change="onSettingChange('disease_threshold')" />
+            <el-input-number v-model="settings.disease_threshold" :min="0.1" :max="0.95" :step="0.05" :precision="2"
+              size="small" style="width: 100px; margin-left: 12px" @change="onSettingChange('disease_threshold')" />
           </div>
         </div>
         <div class="setting-item">
@@ -30,9 +31,8 @@
           <div class="setting-control">
             <el-slider v-model="settings.heatmap_alpha" :min="0.1" :max="0.9" :step="0.05"
               style="flex: 1; max-width: 300px" @change="onSettingChange('heatmap_alpha')" />
-            <el-input-number v-model="settings.heatmap_alpha" :min="0.1" :max="0.9"
-              :step="0.05" :precision="2" size="small" style="width: 100px; margin-left: 12px"
-              @change="onSettingChange('heatmap_alpha')" />
+            <el-input-number v-model="settings.heatmap_alpha" :min="0.1" :max="0.9" :step="0.05" :precision="2"
+              size="small" style="width: 100px; margin-left: 12px" @change="onSettingChange('heatmap_alpha')" />
           </div>
         </div>
         <div class="setting-item">
@@ -50,7 +50,9 @@
     <!-- 通用设置 -->
     <div class="glass-card">
       <div class="section-header">
-        <span class="section-icon"><el-icon><Setting /></el-icon></span>
+        <span class="section-icon"><el-icon>
+            <Setting />
+          </el-icon></span>
         <span class="section-title">通用设置</span>
       </div>
       <div class="settings-grid">
@@ -78,7 +80,9 @@
     <!-- 存储设置 -->
     <div class="glass-card">
       <div class="section-header">
-        <span class="section-icon"><el-icon><FolderOpened /></el-icon></span>
+        <span class="section-icon"><el-icon>
+            <FolderOpened />
+          </el-icon></span>
         <span class="section-title">存储设置</span>
       </div>
       <div class="settings-grid">
@@ -106,7 +110,9 @@
     <!-- 保存按钮 -->
     <div class="save-bar">
       <el-button type="primary" :loading="saving" @click="handleSave">
-        <el-icon><Check /></el-icon> 保存设置
+        <el-icon>
+          <Check />
+        </el-icon> 保存设置
       </el-button>
     </div>
   </div>
@@ -197,11 +203,11 @@ onMounted(() => loadSettings())
       border-radius: 8px;
       background: rgba(34, 211, 238, 0.12);
       color: var(--primary);
-      font-size: 16px;
+      font-size: 17px;
     }
 
     .section-title {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 700;
       color: var(--text-primary);
     }

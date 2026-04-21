@@ -352,16 +352,21 @@ function getExpert(expertId: string | undefined) {
   return experts.find(e => e.id === expertId) || experts[experts.length - 1]
 }
 
-// SVG图标映射
+// SVG医生头像图标映射
 function expertIconSvg(name: string | undefined, _size = 24) {
   const icons: Record<string, string> = {
-    lungs: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v17"/><path d="M12 7.5C10 5.5 7 4.5 4 4.5V16c3 .5 6 1.5 8 4"/><path d="M12 7.5c2-2 5-3 8-3V16c-3 .5-6 1.5-8 4"/><path d="M7 11v2"/><path d="M17 11v2"/></svg>',
-    microscope: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19h14"/><path d="M7 22h10"/><path d="M10 22v-3"/><path d="M14 22v-3"/><circle cx="12" cy="9" r="5"/><path d="M12 4V2"/><circle cx="12" cy="9" r="1.5" fill="#fff"/></svg>',
-    virus: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.9 4.9l2.8 2.8"/><path d="M16.2 16.2l2.9 2.9"/><path d="M4.9 19.1l2.8-2.8"/><path d="M16.2 7.8l2.9-2.9"/></svg>',
-    shield: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4" stroke-width="2.5"/></svg>',
-    ambulance: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="1"/><path d="M16 12h3l3 4v3h-6v-3"/><circle cx="5.5" cy="19" r="2"/><circle cx="18.5" cy="19" r="2"/><path d="M7 12h4"/><path d="M9 10v4"/></svg>',
-    doctor: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><path d="M10 16h4"/><path d="M12 14v5"/></svg>',
-    robot: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 4v5"/><circle cx="12" cy="3" r="1.5" fill="#fff"/><circle cx="9" cy="14" r="1.5" fill="#fff"/><circle cx="15" cy="14" r="1.5" fill="#fff"/><path d="M9 18h6"/><path d="M7 9V7"/><path d="M17 9V7"/></svg>'
+    // 呼吸内科 - 男医生头像（圆角矩形）
+    lungs: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="16" fill="#22D3EE"/><circle cx="50" cy="38" r="16" fill="#fff"/><path d="M25 78c0-14 11-25 25-25s25 11 25 25v8H25v-8z" fill="#fff"/><rect x="42" y="30" width="16" height="4" rx="2" fill="#22D3EE"/></svg>',
+    // 影像科 - 女医生头像（圆角矩形）
+    microscope: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="16" fill="#3B82F6"/><circle cx="50" cy="38" r="16" fill="#fff"/><path d="M25 78c0-14 11-25 25-25s25 11 25 25v8H25v-8z" fill="#fff"/><ellipse cx="50" cy="26" rx="18" ry="12" fill="#fff" opacity="0.9"/></svg>',
+    // 感染科 - 男医生头像（圆角矩形）
+    virus: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="16" fill="#F59E0B"/><circle cx="50" cy="38" r="16" fill="#fff"/><path d="M25 78c0-14 11-25 25-25s25 11 25 25v8H25v-8z" fill="#fff"/><rect x="42" y="30" width="16" height="4" rx="2" fill="#F59E0B"/></svg>',
+    // 结核病 - 女医生头像（圆角矩形）
+    shield: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="16" fill="#8B5CF6"/><circle cx="50" cy="38" r="16" fill="#fff"/><path d="M25 78c0-14 11-25 25-25s25 11 25 25v8H25v-8z" fill="#fff"/><ellipse cx="50" cy="26" rx="18" ry="12" fill="#fff" opacity="0.9"/></svg>',
+    // 急诊科 - 男医生头像（圆角矩形）
+    ambulance: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="16" fill="#EF4444"/><circle cx="50" cy="38" r="16" fill="#fff"/><path d="M25 78c0-14 11-25 25-25s25 11 25 25v8H25v-8z" fill="#fff"/><rect x="42" y="30" width="16" height="4" rx="2" fill="#EF4444"/></svg>',
+    // 全科 - 女医生头像（圆角矩形）
+    doctor: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="16" fill="#06B6D4"/><circle cx="50" cy="38" r="16" fill="#fff"/><path d="M25 78c0-14 11-25 25-25s25 11 25 25v8H25v-8z" fill="#fff"/><ellipse cx="50" cy="26" rx="18" ry="12" fill="#fff" opacity="0.9"/></svg>'
   }
   return icons[name || 'doctor'] || icons.doctor
 }
@@ -753,7 +758,7 @@ onBeforeUnmount(() => {
     }
 
     .eqc-name {
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 600;
       color: var(--text-primary);
       margin-bottom: 4px;
@@ -829,7 +834,7 @@ onBeforeUnmount(() => {
   }
 
   .ec-name {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 2px;
@@ -904,7 +909,7 @@ onBeforeUnmount(() => {
   }
 
   .bot-name {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text-primary);
   }

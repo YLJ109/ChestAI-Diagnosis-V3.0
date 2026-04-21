@@ -5,26 +5,27 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
+// 统一的主题管理系统
 function applyTheme(theme: 'light' | 'dark') {
   const html = document.documentElement
-  html.classList.remove('light', 'dark')
-  html.classList.add(theme)
+  // 移除所有可能存在的主题类名
+  html.removeAttribute('class')
+
+  // 设置新的主题
+  html.setAttribute('data-theme', theme)
+
+  // 存储到本地
+  localStorage.setItem('medical-theme', theme)
 }
 
 onMounted(() => {
-  const stored = localStorage.getItem('theme') as 'light' | 'dark' | null
+  // 只在首次加载时应用保存的主题
+  const stored = localStorage.getItem('medical-theme') as 'light' | 'dark' | null
   if (stored) {
     applyTheme(stored)
-  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    applyTheme('dark')
   } else {
+    // 默认浅色主题
     applyTheme('light')
   }
-
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('theme')) {
-      applyTheme(e.matches ? 'dark' : 'light')
-    }
-  })
 })
 </script>

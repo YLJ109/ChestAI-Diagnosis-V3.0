@@ -27,7 +27,8 @@ def get_pending_reports():
     items = []
     for d in pagination.items:
         patient = Patient.query.get(d.patient_id) if d.patient_id else None
-        report = Report.query.filter_by(diagnosis_id=d.id).order_by(Report.version_no.desc()).first()
+        report = Report.query.filter_by(diagnosis_id=d.id).order_by(
+            Report.version_no.desc()).first()
         top_probs = DiseaseProbability.query.filter_by(diagnosis_id=d.id)\
             .order_by(DiseaseProbability.probability.desc()).limit(3).all()
         items.append({
@@ -77,7 +78,8 @@ def update_report(report_id):
         report.editor_notes = data['editor_notes']
 
     # 创建新版本
-    report.version_no = Report.query.filter_by(diagnosis_id=report.diagnosis_id).count() + 1
+    report.version_no = Report.query.filter_by(
+        diagnosis_id=report.diagnosis_id).count() + 1
     report.status = 'submitted'
     db.session.commit()
 
@@ -144,7 +146,8 @@ def regenerate_report(report_id):
 
     probs = DiseaseProbability.query.filter_by(diagnosis_id=diagnosis.id).all()
     probabilities = [p.to_dict() for p in probs]
-    patient = Patient.query.get(diagnosis.patient_id) if diagnosis.patient_id else None
+    patient = Patient.query.get(
+        diagnosis.patient_id) if diagnosis.patient_id else None
     patient_info = patient.to_dict() if patient else None
 
     report_data = create_diagnosis_report(probabilities, patient_info)

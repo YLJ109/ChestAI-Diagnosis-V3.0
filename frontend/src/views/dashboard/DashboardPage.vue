@@ -3,7 +3,7 @@
   <div class="dashboard-page">
     <!-- 统计卡片 -->
     <div class="stats-grid">
-      <div class="stat-card" @click="$router.push('/diagnose')">
+      <div class="stat-card" @click="$router.push('/staff/diagnose')">
         <div class="stat-icon stat-icon-primary"><el-icon :size="22">
             <Document />
           </el-icon></div>
@@ -12,7 +12,7 @@
           <div class="stat-label">今日诊断</div>
         </div>
       </div>
-      <div class="stat-card" @click="$router.push('/history')">
+      <div class="stat-card" @click="$router.push('/staff/history')">
         <div class="stat-icon stat-icon-blue"><el-icon :size="22">
             <Calendar />
           </el-icon></div>
@@ -21,7 +21,7 @@
           <div class="stat-label">本月累计</div>
         </div>
       </div>
-      <div class="stat-card" @click="$router.push('/approval')">
+      <div class="stat-card" @click="$router.push('/staff/approval')">
         <div class="stat-icon stat-icon-orange"><el-icon :size="22">
             <Bell />
           </el-icon></div>
@@ -65,28 +65,28 @@
         <span class="card-title">快捷入口</span>
       </div>
       <div class="quick-links">
-        <div class="quick-item" @click="$router.push('/diagnose')">
+        <div class="quick-item" @click="$router.push('/staff/diagnose')">
           <div class="quick-icon quick-icon-cyan"><el-icon :size="24">
               <Cpu />
             </el-icon></div>
           <div class="quick-label">AI 辅助诊断</div>
           <div class="quick-desc">上传影像 · 智能分析</div>
         </div>
-        <div class="quick-item" @click="$router.push('/approval')">
+        <div class="quick-item" @click="$router.push('/staff/approval')">
           <div class="quick-icon quick-icon-orange"><el-icon :size="24">
               <Bell />
             </el-icon></div>
           <div class="quick-label">诊断审核</div>
           <div class="quick-desc">{{ stats.pending_count }} 份待处理</div>
         </div>
-        <div class="quick-item" @click="$router.push('/chat')">
+        <div class="quick-item" @click="$router.push('/staff/chat')">
           <div class="quick-icon quick-icon-purple"><el-icon :size="24">
               <ChatDotRound />
             </el-icon></div>
           <div class="quick-label">AI 医学咨询</div>
           <div class="quick-desc">智能问答助手</div>
         </div>
-        <div class="quick-item" @click="$router.push('/triage')">
+        <div class="quick-item" @click="$router.push('/staff/triage')">
           <div class="quick-icon quick-icon-blue"><el-icon :size="24">
               <FirstAidKit />
             </el-icon></div>
@@ -325,7 +325,7 @@ onMounted(async () => {
 }
 
 .card-title {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
 }

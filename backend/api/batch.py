@@ -29,10 +29,12 @@ _batch_progress = {}
 _batch_cancel = {}
 
 # 报告生成线程池（3 并发，用于 LLM 报告并行生成）
-_report_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='llm_report')
+_report_pool = ThreadPoolExecutor(
+    max_workers=3, thread_name_prefix='llm_report')
 
 # 文件名解析正则: P患者ID-姓名-性别-年龄-临床发现-图片ID.扩展名
-FILENAME_RE = re.compile(r'^(P\d+)-(.+)-(male|female)-(\d+)-([A-Za-z]+)-(\d+)\.(\w+)$')
+FILENAME_RE = re.compile(
+    r'^(P\d+)-(.+)-(male|female)-(\d+)-([A-Za-z]+)-(\d+)\.(\w+)$')
 
 FINDING_ZH_MAP = {
     'Cough': '咳嗽', 'ChestPain': '胸痛', 'Fever': '发热',
@@ -100,7 +102,8 @@ def _process_batch_async(app, batch_id, file_entries, user_id, patient_ids_map, 
     try:
         with app.app_context():
             print(f"[批量诊断] 进入app_context, 开始处理 batch_id={batch_id}")
-            _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, skip_heatmap, clinical_findings_map)
+            _process_batch_inner(app, batch_id, file_entries, user_id,
+                                 patient_ids_map, skip_heatmap, clinical_findings_map)
             print(f"[批量诊断] 处理完成 batch_id={batch_id}")
     except Exception as e:
         import traceback
@@ -124,6 +127,80 @@ def _process_batch_async(app, batch_id, file_entries, user_id, patient_ids_map, 
                     db.session.commit()
             except Exception:
                 pass
+
+
+def _process_report_async(app, diagnosis_id, patient_info, probabilities, clinical_finding, batch_id, filename_orig, user_id):
+    """后台异步生成报告（不阻塞检测流程）"""
+    try:
+        with app.app_context():
+            from models.diagnosis import Diagnosis
+            from models.report import Report
+            from models.approval import Approval
+
+            print(f"[批量报告] 开始生成报告: {filename_orig}")
+
+            # 生成LLM报告
+            report_data = create_diagnosis_report(
+                probabilities, patient_info or None)
+
+            report = Report(
+                diagnosis_id=diagnosis_id,
+                ai_generated_content=report_data['ai_generated_content'],
+                findings=report_data['findings'],
+                impression=report_data['impression'],
+                recommendations=report_data['recommendations'],
+                ai_model_used=report_data['ai_model_used'],
+                status='draft',
+            )
+            db.session.add(report)
+            db.session.flush()
+
+            approval = Approval(
+                diagnosis_id=diagnosis_id,
+                report_id=report.id,
+                patient_id=patient_info.get('id') if patient_info else 0,
+                submitter_id=user_id,
+                status='pending',
+                priority='normal',
+            )
+            db.session.add(approval)
+
+            diagnosis_obj = Diagnosis.query.get(diagnosis_id)
+            if diagnosis_obj:
+                diagnosis_obj.report_status = 'pending_review'
+            db.session.commit()
+
+            # 更新进度中的报告数据
+            progress = _batch_progress.get(batch_id)
+            if progress:
+                for r in progress['results']:
+                    if r['original_filename'] == filename_orig:
+                        r['data']['report_id'] = report.id
+                        r['data']['ai_report'] = {
+                            'findings': report_data['findings'],
+                            'impression': report_data['impression'],
+                            'recommendations': report_data['recommendations'],
+                            'full_text': report_data.get('ai_generated_content', ''),
+                        }
+                        break
+            print(f"[批量报告] ✅ 报告生成完成: {filename_orig}, report_id={report.id}")
+
+    except Exception as e:
+        import traceback
+        error_msg = f"[批量报告] ❌ 报告生成失败 {filename_orig}: {e}"
+        print(error_msg)
+        traceback.print_exc()
+        # 即使失败也更新进度
+        progress = _batch_progress.get(batch_id)
+        if progress:
+            for r in progress['results']:
+                if r['original_filename'] == filename_orig:
+                    r['data']['ai_report'] = {
+                        'findings': '',
+                        'impression': f'报告生成失败: {str(e)}',
+                        'recommendations': ''
+                    }
+                    break
 
 
 def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, skip_heatmap, clinical_findings_map):
@@ -312,81 +389,57 @@ def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, 
                     heatmap_filename = None
                     if heatmap_image:
                         heatmap_filename = f"{uuid.uuid4().hex}_gradcam.png"
-                        heatmap_image.save(os.path.join(heatmap_dir, heatmap_filename))
+                        heatmap_image.save(os.path.join(
+                            heatmap_dir, heatmap_filename))
                         diag = Diagnosis.query.get(diagnosis_id)
                         if diag:
                             diag.heatmap_path = f"heatmaps/{heatmap_filename}"
                         diag_result['heatmap_url'] = f"/static/heatmaps/{heatmap_filename}"
+                        _db_commit_with_retry()
 
-                    # LLM报告生成（使用线程池并发，最多3个同时调用LLM API）
-                    patient_info = dict(patient_info_dict) if patient_info_dict else {}
-                    clinical_finding = clinical_findings_map.get(filename_orig, '')
+                    # ---- 步骤5: 立即标记该患者检测完成（报告在后台异步生成）----
+                    pr_entry = None
+                    for r in progress['results']:
+                        if r['original_filename'] == filename_orig and r.get('status') == 'reporting':
+                            pr_entry = r
+                            break
+                    if pr_entry:
+                        pr_entry['status'] = 'done'
+
+                    success_count += 1
+
+                    # ---- 步骤6: 异步生成报告（不阻塞，后台处理）----
+                    patient_info = dict(
+                        patient_info_dict) if patient_info_dict else {}
+                    clinical_finding = clinical_findings_map.get(
+                        filename_orig, '')
                     if clinical_finding:
                         patient_info['clinical_finding'] = clinical_finding
+                    patient_info['id'] = patient_id_val
 
-                    # 通过线程池提交 LLM 调用（非阻塞提交，阻塞等待结果）
-                    report_future = _report_pool.submit(
-                        create_diagnosis_report, probabilities, patient_info or None
+                    app_copy = current_app._get_current_object()
+                    print(
+                        f"[批量诊断] 📤 提交异步报告任务: {filename_orig}, diagnosis_id={diagnosis_id}")
+                    future = _report_pool.submit(
+                        _process_report_async,
+                        app_copy, diagnosis_id, patient_info, probabilities,
+                        clinical_finding, batch_id, filename_orig, user_id
                     )
-                    report_data = report_future.result(timeout=120)  # 单张报告最长等 120 秒
-                    report = Report(
-                        diagnosis_id=diagnosis_id,
-                        ai_generated_content=report_data['ai_generated_content'],
-                        findings=report_data['findings'],
-                        impression=report_data['impression'],
-                        recommendations=report_data['recommendations'],
-                        ai_model_used=report_data['ai_model_used'],
-                    )
-                    db.session.add(report)
-                    db.session.flush()
+                    # 添加回调以便调试
 
-                    approval = Approval(
-                        diagnosis_id=diagnosis_id,
-                        report_id=report.id,
-                        patient_id=diag_result['patient_id'],
-                        submitter_id=user_id,
-                        status='pending',
-                        priority='normal',
-                    )
-                    db.session.add(approval)
-
-                    diagnosis_obj = Diagnosis.query.get(diagnosis_id)
-                    if diagnosis_obj:
-                        diagnosis_obj.report_status = 'pending_review'
-                    _db_commit_with_retry()
-
-                    # 补充报告数据
-                    diag_result['report_id'] = report.id
-                    diag_result['ai_report'] = {
-                        'findings': report_data['findings'],
-                        'impression': report_data['impression'],
-                        'recommendations': report_data['recommendations'],
-                        'full_text': report_data.get('ai_generated_content', ''),
-                    }
+                    def _on_done(f):
+                        try:
+                            f.result()
+                        except Exception as e:
+                            print(
+                                f"[批量诊断] ❌ 异步任务异常: {filename_orig}, error={e}")
+                    future.add_done_callback(_on_done)
 
                 except Exception as report_err:
-                    # 报告失败但检测已成功
-                    try:
-                        diagnosis_obj = Diagnosis.query.get(diagnosis_id)
-                        if diagnosis_obj:
-                            diagnosis_obj.report_status = 'pending_review'
-                        _db_commit_with_retry()
-                    except Exception:
-                        pass
-                    diag_result['ai_report'] = {'findings': '', 'impression': '报告生成失败', 'recommendations': ''}
-                    diag_result['report_error'] = str(report_err)
-                    errors.append(f"{filename_orig}: 报告生成失败 - {report_err}")
-
-                # ---- 步骤5: 标记该患者完成 ----
-                pr_entry = None
-                for r in progress['results']:
-                    if r['original_filename'] == filename_orig and r.get('status') == 'reporting':
-                        pr_entry = r
-                        break
-                if pr_entry:
-                    pr_entry['status'] = 'done'
-
-                success_count += 1
+                    # 热力图失败不影响检测结果
+                    diag_result['ai_report'] = {
+                        'findings': '', 'impression': '', 'recommendations': ''}
+                    errors.append(f"{filename_orig}: 热力图/报告异常 - {report_err}")
 
             except Exception as detect_err:
                 failed_count += 1
@@ -407,7 +460,8 @@ def _process_batch_inner(app, batch_id, file_entries, user_id, patient_ids_map, 
             if progress.get('cancelled'):
                 batch.status = 'cancelled'
             else:
-                batch.status = 'completed' if failed_count == 0 else ('partial_failed' if success_count > 0 else 'failed')
+                batch.status = 'completed' if failed_count == 0 else (
+                    'partial_failed' if success_count > 0 else 'failed')
             batch.error_log = '\n'.join(errors) if errors else None
             batch.completed_at = datetime.now()
             _db_commit_with_retry()
@@ -442,7 +496,8 @@ def batch_diagnose():
         raw = request.form.get('patient_ids', '')
         if raw:
             patient_ids_map = json.loads(raw)
-            patient_ids_map = {k: int(v) for k, v in patient_ids_map.items() if v}
+            patient_ids_map = {k: int(v)
+                               for k, v in patient_ids_map.items() if v}
     except Exception:
         patient_ids_map = {}
 
@@ -469,14 +524,16 @@ def batch_diagnose():
         _db_commit_with_retry()
 
         # 先保存所有上传文件到磁盘
-        upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'images')
+        upload_dir = os.path.join(
+            current_app.config['UPLOAD_FOLDER'], 'images')
         os.makedirs(upload_dir, exist_ok=True)
 
         file_entries = []
         for f in files:
             if not f or not f.filename:
                 continue
-            ext = f.filename.rsplit('.', 1)[1].lower() if '.' in f.filename else 'png'
+            ext = f.filename.rsplit('.', 1)[1].lower(
+            ) if '.' in f.filename else 'png'
             saved_name = f"{uuid.uuid4().hex}.{ext}"
             saved_path = f"images/{saved_name}"
             filepath = os.path.join(upload_dir, saved_name)
@@ -499,10 +556,12 @@ def batch_diagnose():
 
         # 启动后台线程
         app = current_app._get_current_object()
-        print(f"[批量诊断] 准备启动线程: batch_id={batch.id}, file_entries={len(file_entries)}")
+        print(
+            f"[批量诊断] 准备启动线程: batch_id={batch.id}, file_entries={len(file_entries)}")
         thread = threading.Thread(
             target=_process_batch_async,
-            args=(app, batch.id, file_entries, request.current_user_id, patient_ids_map, skip_heatmap, clinical_findings_map),
+            args=(app, batch.id, file_entries, request.current_user_id,
+                  patient_ids_map, skip_heatmap, clinical_findings_map),
             daemon=True,
         )
         thread.start()
@@ -538,10 +597,10 @@ def get_batch_progress(batch_id):
                 'current_file': progress['current_file'],
                 'cancelled': progress['cancelled'],
                 'status': ('processing'
-                    if not progress['cancelled']
-                    and (progress['processed'] < progress['total']
-                         or any(r.get('status') in ('diagnosing', 'reporting') for r in progress['results']))
-                    else 'completed'),
+                           if not progress['cancelled']
+                           and (progress['processed'] < progress['total']
+                                or any(r.get('status') in ('diagnosing', 'reporting') for r in progress['results']))
+                           else 'completed'),
                 'results': progress['results'],
             }
         })
@@ -570,9 +629,11 @@ def get_batch_progress(batch_id):
     results = []
     for d in diagnoses:
         probs = [p.to_dict() for p in d.probabilities]
-        probs_sorted = sorted(probs, key=lambda x: x['probability'], reverse=True)
+        probs_sorted = sorted(
+            probs, key=lambda x: x['probability'], reverse=True)
         top_prob = probs_sorted[0]['probability'] if probs_sorted else 0
-        patient = patients_map.get(d.patient_id) if d.patient_id and d.patient_id > 0 else None
+        patient = patients_map.get(
+            d.patient_id) if d.patient_id and d.patient_id > 0 else None
         reports = d.reports  # 已通过 selectinload 预加载
         report = reports[0] if reports else None
 
@@ -655,7 +716,8 @@ def batch_generate_reports(batch_id):
                 patient = Patient.query.get(diagnosis.patient_id)
 
             # 构建图片完整路径
-            image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], diagnosis.image_path)
+            image_path = os.path.join(
+                current_app.config['UPLOAD_FOLDER'], diagnosis.image_path)
             if not os.path.isfile(image_path):
                 failed += 1
                 continue
@@ -677,14 +739,16 @@ def batch_generate_reports(batch_id):
             clinical_finding = ''
             # 从请求中获取临床发现（如果有传递）
             try:
-                cf_map = request.json.get('clinical_findings', {}) if request.is_json else {}
+                cf_map = request.json.get(
+                    'clinical_findings', {}) if request.is_json else {}
                 clinical_finding = cf_map.get(diagnosis.image_path, '')
             except Exception:
                 pass
             if clinical_finding:
                 patient_info['clinical_finding'] = clinical_finding
 
-            report_data = create_diagnosis_report(probabilities, patient_info or None)
+            report_data = create_diagnosis_report(
+                probabilities, patient_info or None)
             report = Report(
                 diagnosis_id=diagnosis.id,
                 ai_generated_content=report_data['ai_generated_content'],
@@ -731,7 +795,8 @@ def batch_generate_reports(batch_id):
     _db_commit_with_retry()
 
     # 更新批次状态
-    remaining = Diagnosis.query.filter_by(batch_id=batch_id, report_status='diagnosed').count()
+    remaining = Diagnosis.query.filter_by(
+        batch_id=batch_id, report_status='diagnosed').count()
     if remaining == 0 and batch.status == 'diagnosed':
         batch.status = 'completed' if failed == 0 else 'partial_failed'
         batch.completed_at = datetime.now()
@@ -809,7 +874,8 @@ def batch_upload():
             patient = None
             patient_id = 0
             if is_standard:
-                patient = find_or_create_patient(patient_info, request.current_user_id)
+                patient = find_or_create_patient(
+                    patient_info, request.current_user_id)
                 if patient:
                     patient_id = patient.id
             else:
@@ -894,13 +960,15 @@ def batch_upload():
     pdf_filename = None
     if diagnosis_results:
         try:
-            pdf_filename = generate_batch_pdf(batch_no, diagnosis_results, pdf_dir)
+            pdf_filename = generate_batch_pdf(
+                batch_no, diagnosis_results, pdf_dir)
         except Exception as e:
             errors.append(f"PDF生成失败: {str(e)}")
 
     batch.success_count = success_count
     batch.failed_count = failed_count
-    batch.status = 'completed' if failed_count == 0 else ('partial_failed' if success_count > 0 else 'failed')
+    batch.status = 'completed' if failed_count == 0 else (
+        'partial_failed' if success_count > 0 else 'failed')
     batch.error_log = '\n'.join(errors) if errors else None
     batch.completed_at = datetime.now()
     _db_commit_with_retry()
@@ -958,7 +1026,8 @@ def get_batch_list():
         d['diagnoses'] = []
         for diag in diagnoses_by_batch.get(b.id, []):
             dd = diag.to_dict()
-            patient = patients_map.get(diag.patient_id) if diag.patient_id and diag.patient_id > 0 else None
+            patient = patients_map.get(
+                diag.patient_id) if diag.patient_id and diag.patient_id > 0 else None
             dd['patient_name'] = patient.name if patient else '未知患者'
             dd['patient_no'] = patient.patient_no if patient else ''
             d['diagnoses'].append(dd)
@@ -998,7 +1067,8 @@ def get_batch_detail(batch_id):
     diag_list = []
     for d in diagnoses:
         dd = d.to_dict()
-        patient = patients_map.get(d.patient_id) if d.patient_id and d.patient_id > 0 else None
+        patient = patients_map.get(
+            d.patient_id) if d.patient_id and d.patient_id > 0 else None
         dd['patient_name'] = patient.name if patient else '未知患者'
         dd['patient_no'] = patient.patient_no if patient else ''
         dd['probabilities'] = [p.to_dict() for p in d.probabilities]  # 已预加载

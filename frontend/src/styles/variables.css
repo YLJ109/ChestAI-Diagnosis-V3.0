@@ -1,210 +1,253 @@
 /* ============================================
    胸影智诊V3.0 - 双主题设计系统
    明亮模式(light) + 暗黑模式(dark)
-   主色: 冰蓝 #22D3EE
+   主色: 浅天青渐变蓝色 - 医疗政务官方色系
    ============================================ */
 
 /* ========================
    明亮模式 (默认)
    ======================== */
 :root {
-  /* 背景色 */
+  /* ===== 背景色 - 柔和浅灰 ===== */
   --bg-primary: #F5F7FA;
   --bg-secondary: #FFFFFF;
   --bg-tertiary: #EBEDF2;
   --bg-dark: #E2E4EA;
 
-  /* 层级区分 */
+  /* ===== 层级区分 - 极淡阴影 ===== */
   --glass-bg: rgba(0, 0, 0, 0.02);
   --glass-bg-hover: rgba(0, 0, 0, 0.04);
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-border-hover: rgba(0, 0, 0, 0.16);
   --glass-blur: blur(8px);
 
-  /* 主色调 - 冰蓝 */
-  --primary: #22D3EE;
-  --primary-rgb: 34, 211, 238;
-  --primary-light: rgba(34, 211, 238, 0.1);
-  --primary-dark: #06B6D4;
-  --primary-darker: #0891B2;
-  --primary-glow: rgba(34, 211, 238, 0.2);
+  /* ===== 主色调 - 浅天青渐变蓝色（医疗政务官方色系）===== */
+  --primary: #3B82F6;
+  /* 商务蓝 */
+  --primary-rgb: 59, 130, 246;
+  --primary-light: rgba(59, 130, 246, 0.08);
+  --primary-dark: #2563EB;
+  /* 深蓝 */
+  --primary-darker: #1D4ED8;
+  /* 更深蓝 */
+  --primary-glow: rgba(59, 130, 246, 0.15);
 
-  /* 辅助色 */
+  /* 辅助渐变色 - 天青色 */
+  --accent-cyan: #06B6D4;
+  --accent-cyan-light: rgba(6, 182, 212, 0.08);
+
+  /* 渐变组合 - 医疗政务风格 */
+  --gradient-medical: linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%);
+  --gradient-medical-subtle: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+
+  /* ===== 辅助色 - 低饱和度商务配色 ===== */
   --purple: #8B5CF6;
-  --purple-light: rgba(139, 92, 246, 0.1);
+  --purple-light: rgba(139, 92, 246, 0.08);
   --blue: #3B82F6;
-  --blue-light: rgba(59, 130, 246, 0.1);
+  --blue-light: rgba(59, 130, 246, 0.08);
   --orange: #F59E0B;
-  --orange-light: rgba(245, 158, 11, 0.1);
+  --orange-light: rgba(245, 158, 11, 0.08);
   --red: #EF4444;
   --red-light: rgba(239, 68, 68, 0.08);
+  --green: #10B981;
+  --green-light: rgba(16, 185, 129, 0.08);
 
-  /* 文字色 */
-  --text-primary: #18181B;
+  /* ===== 文字色 - 深灰色正文 ===== */
+  --text-primary: #1F2937;
+  /* 深灰 */
   --text-secondary: #6B7280;
+  /* 中灰 */
   --text-muted: #9CA3AF;
+  /* 浅灰 */
 
-  /* 卡片 */
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --card-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* ===== 卡片 - 纯白底色+柔和弥散投影 ===== */
+  --card-bg: #FFFFFF;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --card-border: #E5E7EB;
+  /* 浅灰分割线 */
 
-  /* 圆角 */
+  /* ===== 圆角 - 大圆角矩形 ===== */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
+  --radius-2xl: 24px;
 
-  /* 过渡 */
+  /* ===== 过渡动画 ===== */
   --transition-fast: 0.15s ease;
   --transition-normal: 0.2s ease;
   --transition-slow: 0.3s ease;
 
-  /* 侧边栏 */
+  /* ===== 侧边栏 - 纯白背景 ===== */
   --sidebar-bg: #FFFFFF;
   --sidebar-width: 240px;
   --sidebar-collapsed-width: 72px;
-  --sidebar-active-bg: rgba(34, 211, 238, 0.08);
+  --sidebar-active-bg: rgba(59, 130, 246, 0.08);
   --sidebar-active-border: var(--primary);
-  --sidebar-text: #64748b;
-  --sidebar-text-active: #22D3EE;
+  --sidebar-text: #6B7280;
+  --sidebar-text-active: #3B82F6;
 
-  /* 管理端侧边栏 */
+  /* ===== 管理端侧边栏 ===== */
   --admin-sidebar-bg: #FFFFFF;
   --admin-accent: #EF4444;
   --admin-accent-light: rgba(239, 68, 68, 0.08);
 
-  /* 上传区域 */
-  --upload-icon: #909399;
-  --upload-text: #909399;
+  /* ===== 上传区域 ===== */
+  --upload-icon: #9CA3AF;
+  --upload-text: #9CA3AF;
 
-  /* 概率色 */
+  /* ===== 概率色 - 医疗级警示 ===== */
   --prob-high: #EF4444;
   --prob-mid: #F59E0B;
-  --prob-low: #06B6D4;
+  --prob-low: #10B981;
 
-  /* 渐变背景（仅按钮等必要场景使用） */
-  --gradient-primary: linear-gradient(135deg, #22D3EE, #06B6D4);
+  /* ===== 渐变背景 - 仅按钮等必要场景使用 ===== */
+  --gradient-primary: linear-gradient(135deg, #3B82F6, #2563EB);
   --gradient-purple: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  --gradient-success: linear-gradient(135deg, #10B981, #059669);
 
-  /* 表格头 */
+  /* ===== 表格头 ===== */
   --table-header-bg: rgba(0, 0, 0, 0.02);
 
-  /* 遮罩 */
-  --loading-mask: rgba(255, 255, 255, 0.8);
+  /* ===== 遮罩 ===== */
+  --loading-mask: rgba(255, 255, 255, 0.85);
 
-  /* Element Plus覆盖 - 浅色 */
-  --el-color-primary: #06B6D4;
-  --el-color-primary-light-3: rgba(34, 211, 238, 0.5);
-  --el-color-primary-light-5: rgba(34, 211, 238, 0.3);
+  /* ===== Element Plus覆盖 - 浅色医疗政务风格 ===== */
+  --el-color-primary: #3B82F6;
+  --el-color-primary-light-3: rgba(59, 130, 246, 0.5);
+  --el-color-primary-light-5: rgba(59, 130, 246, 0.3);
   --el-color-primary-light-7: var(--primary-light);
-  --el-color-primary-light-8: rgba(34, 211, 238, 0.06);
-  --el-color-primary-light-9: rgba(34, 211, 238, 0.04);
-  --el-color-primary-dark-2: #0891B2;
+  --el-color-primary-light-8: rgba(59, 130, 246, 0.06);
+  --el-color-primary-light-9: rgba(59, 130, 246, 0.04);
+  --el-color-primary-dark-2: #2563EB;
   --el-bg-color: #ffffff;
   --el-bg-color-overlay: #ffffff;
   --el-bg-color-page: #F5F7FA;
-  --el-text-color-primary: #18181B;
+  --el-text-color-primary: #1F2937;
   --el-text-color-regular: #6B7280;
   --el-text-color-secondary: #9CA3AF;
-  --el-border-color: #E2E4EA;
+  --el-border-color: #E5E7EB;
   --el-border-color-light: #EBEDF2;
   --el-fill-color-blank: #ffffff;
   --el-fill-color-light: #F5F7FA;
 }
 
 /* ========================
-   暗黑模式
+   暗黑模式 - 支持两种选择器
    ======================== */
-html.dark {
-  /* 背景色 - 哑光深炭灰 */
-  --bg-primary: #18181B;
-  --bg-secondary: #1E1E2E;
-  --bg-tertiary: #2A2A3E;
-  --bg-dark: #121216;
+html.dark,
+[data-theme="dark"] {
+  /* ===== 背景色 - 专业深炭灰 ===== */
+  --bg-primary: #0F172A;
+  /* 深蓝灰 */
+  --bg-secondary: #1E293B;
+  /* 稍浅深蓝灰 */
+  --bg-tertiary: #334155;
+  /* 更浅 */
+  --bg-dark: #020617;
+  /* 最深 */
 
-  /* 层级区分 */
+  /* ===== 层级区分 - 微弱高光 ===== */
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-bg-hover: rgba(255, 255, 255, 0.06);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-hover: rgba(255, 255, 255, 0.16);
   --glass-blur: none;
 
-  /* 主色调 - 冰蓝 */
-  --primary: #22D3EE;
-  --primary-rgb: 34, 211, 238;
-  --primary-light: rgba(34, 211, 238, 0.12);
-  --primary-dark: #06B6D4;
-  --primary-darker: #0891B2;
-  --primary-glow: rgba(34, 211, 238, 0.15);
+  /* ===== 主色调 - 保持商务蓝（深色模式适配）===== */
+  --primary: #60A5FA;
+  /* 亮蓝 */
+  --primary-rgb: 96, 165, 250;
+  --primary-light: rgba(96, 165, 250, 0.12);
+  --primary-dark: #3B82F6;
+  /* 标准蓝 */
+  --primary-darker: #2563EB;
+  /* 深蓝 */
+  --primary-glow: rgba(96, 165, 250, 0.2);
 
-  /* 辅助色 */
+  /* 辅助渐变色 */
+  --accent-cyan: #22D3EE;
+  --accent-cyan-light: rgba(34, 211, 238, 0.12);
+
+  /* 渐变组合 */
+  --gradient-medical: linear-gradient(135deg, #60A5FA 0%, #22D3EE 100%);
+  --gradient-medical-subtle: linear-gradient(135deg, rgba(96, 165, 250, 0.08) 0%, rgba(34, 211, 238, 0.08) 100%);
+
+  /* ===== 辅助色 - 深色模式适配 ===== */
   --purple: #A78BFA;
-  --purple-light: rgba(167, 139, 250, 0.15);
+  --purple-light: rgba(167, 139, 250, 0.12);
   --blue: #60A5FA;
-  --blue-light: rgba(96, 165, 250, 0.15);
+  --blue-light: rgba(96, 165, 250, 0.12);
   --orange: #FBBF24;
-  --orange-light: rgba(251, 191, 36, 0.15);
+  --orange-light: rgba(251, 191, 36, 0.12);
   --red: #F87171;
-  --red-light: rgba(248, 113, 113, 0.15);
+  --red-light: rgba(248, 113, 113, 0.12);
+  --green: #34D399;
+  --green-light: rgba(52, 211, 153, 0.12);
 
-  /* 文字色 */
-  --text-primary: #FFFFFF;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
+  /* ===== 文字色 - 高对比度 ===== */
+  --text-primary: #F9FAFB;
+  /* 近白 */
+  --text-secondary: #D1D5DB;
+  /* 浅灰 */
+  --text-muted: #9CA3AF;
+  /* 中灰 */
 
-  /* 卡片 */
-  --card-bg: rgba(30, 30, 46, 0.8);
-  --card-shadow: none;
-  --card-shadow-hover: none;
+  /* ===== 卡片 - 深色背景+微弱边框 ===== */
+  --card-bg: #1E293B;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --card-border: #334155;
 
-  /* 侧边栏 */
-  --sidebar-bg: #141418;
-  --sidebar-active-bg: rgba(34, 211, 238, 0.1);
-  --sidebar-text: #A1A1AA;
-  --sidebar-text-active: #22D3EE;
+  /* ===== 侧边栏 - 深色背景 ===== */
+  --sidebar-bg: #0F172A;
+  --sidebar-active-bg: rgba(96, 165, 250, 0.12);
+  --sidebar-text: #D1D5DB;
+  --sidebar-text-active: #60A5FA;
 
-  /* 管理端侧边栏 */
-  --admin-sidebar-bg: #141418;
+  /* ===== 管理端侧边栏 ===== */
+  --admin-sidebar-bg: #0F172A;
   --admin-accent-light: rgba(239, 68, 68, 0.12);
 
-  /* 上传区域 */
-  --upload-icon: #71717A;
-  --upload-text: #A1A1AA;
+  /* ===== 上传区域 ===== */
+  --upload-icon: #9CA3AF;
+  --upload-text: #D1D5DB;
 
-  /* 概率色 */
+  /* ===== 概率色 - 深色模式适配 ===== */
   --prob-high: #F87171;
   --prob-mid: #FBBF24;
-  --prob-low: #22D3EE;
+  --prob-low: #34D399;
 
-  /* 渐变背景 */
-  --gradient-primary: linear-gradient(135deg, #22D3EE, #06B6D4);
+  /* ===== 渐变背景 - 深色模式 ===== */
+  --gradient-primary: linear-gradient(135deg, #60A5FA, #3B82F6);
   --gradient-purple: linear-gradient(135deg, #A78BFA, #8B5CF6);
+  --gradient-success: linear-gradient(135deg, #34D399, #10B981);
 
-  /* 表格头 */
+  /* ===== 表格头 ===== */
   --table-header-bg: rgba(255, 255, 255, 0.03);
 
-  /* 遮罩 */
-  --loading-mask: rgba(24, 24, 27, 0.8);
+  /* ===== 遮罩 ===== */
+  --loading-mask: rgba(15, 23, 42, 0.85);
 
-  /* Element Plus覆盖 - 深色 */
-  --el-color-primary: #22D3EE;
-  --el-color-primary-light-3: rgba(34, 211, 238, 0.4);
-  --el-color-primary-light-5: rgba(34, 211, 238, 0.25);
+  /* ===== Element Plus覆盖 - 深色医疗政务风格 ===== */
+  --el-color-primary: #60A5FA;
+  --el-color-primary-light-3: rgba(96, 165, 250, 0.4);
+  --el-color-primary-light-5: rgba(96, 165, 250, 0.25);
   --el-color-primary-light-7: var(--primary-light);
-  --el-color-primary-light-8: rgba(34, 211, 238, 0.08);
-  --el-color-primary-light-9: rgba(34, 211, 238, 0.04);
-  --el-color-primary-dark-2: #06B6D4;
-  --el-bg-color: #1E1E2E;
-  --el-bg-color-overlay: #1E1E2E;
-  --el-bg-color-page: #18181B;
-  --el-text-color-primary: #FFFFFF;
-  --el-text-color-regular: #A1A1AA;
-  --el-text-color-secondary: #71717A;
+  --el-color-primary-light-8: rgba(96, 165, 250, 0.08);
+  --el-color-primary-light-9: rgba(96, 165, 250, 0.04);
+  --el-color-primary-dark-2: #3B82F6;
+  --el-bg-color: #1E293B;
+  --el-bg-color-overlay: #1E293B;
+  --el-bg-color-page: #0F172A;
+  --el-text-color-primary: #F9FAFB;
+  --el-text-color-regular: #D1D5DB;
+  --el-text-color-secondary: #9CA3AF;
   --el-border-color: rgba(255, 255, 255, 0.1);
   --el-border-color-light: rgba(255, 255, 255, 0.06);
-  --el-fill-color-blank: rgba(30, 30, 46, 0.8);
-  --el-fill-color-light: rgba(42, 42, 62, 0.6);
+  --el-fill-color-blank: #1E293B;
+  --el-fill-color-light: #334155;
 }
 
 /* ========================
@@ -220,6 +263,7 @@ html,
 body,
 #app {
   height: 100%;
+  overflow: hidden !important;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -228,23 +272,24 @@ body,
   transition: background 0.2s ease, color 0.2s ease;
 }
 
-/* 滚动条 */
+/* 滚动条 - 全局禁用 */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 0px;
+  height: 0px;
+  display: none;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 3px;
+  background: transparent;
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--glass-border-hover);
+  background: transparent;
 }
 
 /* ============================================
@@ -275,7 +320,7 @@ body,
 }
 
 .page-header .page-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   display: flex;
@@ -573,6 +618,7 @@ body,
 .filter-bar .el-select {
   min-width: 150px;
 }
+
 .filter-bar .el-date-editor {
   min-width: 260px;
 }

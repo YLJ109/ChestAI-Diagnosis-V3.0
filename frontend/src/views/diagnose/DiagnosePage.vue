@@ -145,8 +145,8 @@
       </div>
     </div>
 
-    <!-- ===== 第二区：AI诊断结果 ===== -->
-    <div class="zone-card result-zone" v-if="result" :class="{ active: currentStep === 3 }">
+    <!-- ===== 第二区：AI诊断结果 + 诊断报告 ===== -->
+    <div class="zone-card result-zone" v-if="result" :class="{ active: currentStep >= 3 }">
       <div class="zone-header">
         <div class="zone-badge result-badge">
           <el-icon>
@@ -163,145 +163,226 @@
       </div>
       <div class="zone-body">
         <div class="result-layout">
-          <!-- 左：影像分析 -->
-          <div class="result-images">
-            <div class="image-box">
-              <div class="image-label">原始影像</div>
-              <div class="preview-img-wrapper" :class="{ 'has-image': imagePreviewUrl || result?.image_url }">
-                <el-image v-if="imagePreviewUrl || result?.image_url" :src="imagePreviewUrl || result.image_url" lazy
-                  fit="contain" class="preview-img" :preview-src-list="[imagePreviewUrl || result.image_url]">
-                  <template #error>
-                    <div class="image-error"><el-icon :size="28">
-                        <Picture></Picture>
-                      </el-icon><span>影像加载失败</span></div>
-                  </template>
-                </el-image>
-                <div v-else class="image-placeholder"><el-icon :size="28">
-                    <Picture></Picture>
-                  </el-icon><span>暂无影像</span></div>
+          <!-- 左：AI诊断结果（影像+热力图+医生审核） -->
+          <div class="result-left-panel">
+            <!-- 影像分析 -->
+            <div class="result-images">
+              <div class="image-box">
+                <div class="image-label">原始影像</div>
+                <div class="preview-img-wrapper" :class="{ 'has-image': imagePreviewUrl || result?.image_url }">
+                  <el-image v-if="imagePreviewUrl || result?.image_url" :src="imagePreviewUrl || result.image_url" lazy
+                    fit="contain" class="preview-img" :preview-src-list="[imagePreviewUrl || result.image_url]">
+                    <template #error>
+                      <div class="image-error"><el-icon :size="28">
+                          <Picture></Picture>
+                        </el-icon><span>影像加载失败</span></div>
+                    </template>
+                  </el-image>
+                  <div v-else class="image-placeholder"><el-icon :size="28">
+                      <Picture></Picture>
+                    </el-icon><span>暂无影像</span></div>
+                </div>
+              </div>
+              <div class="image-box" v-if="result?.heatmap_url">
+                <div class="image-label">Grad-CAM 热力图</div>
+                <div class="preview-img-wrapper has-image">
+                  <el-image :src="result.heatmap_url" fit="contain" class="preview-img" lazy
+                    :preview-src-list="[result.heatmap_url]">
+                    <template #error>
+                      <div class="image-error"><el-icon :size="28">
+                          <Picture />
+                        </el-icon><span>热力图加载失败</span></div>
+                    </template>
+                  </el-image>
+                </div>
               </div>
             </div>
-            <div class="image-box" v-if="result?.heatmap_url">
-              <div class="image-label">Grad-CAM 热力图</div>
-              <div class="preview-img-wrapper has-image">
-                <el-image :src="result.heatmap_url" fit="contain" class="preview-img" lazy
-                  :preview-src-list="[result.heatmap_url]">
-                  <template #error>
-                    <div class="image-error"><el-icon :size="28">
-                        <Picture />
-                      </el-icon><span>热力图加载失败</span></div>
-                  </template>
-                </el-image>
+
+            <!-- 报告操作面板 -->
+            <div class="result-actions-panel">
+              <div class="action-title">报告操作</div>
+              <div class="action-buttons">
+                <el-button size="large" @click="handleGenerateReport" :loading="generatingReport"
+                  class="action-btn report" :type="!reportContent ? 'primary' : 'default'"
+                  :class="{ 'report-pending': !reportContent }">
+                  <el-icon>
+                    <Document />
+                  </el-icon> {{ reportContent ? '重新生成' : '生成报告' }}
+                </el-button>
               </div>
+              <div class="action-note">{{ reportContent ? '如需修改报告内容，可点击重新生成' : '检测完成！诊断已自动保存至历史记录并提交审批' }}</div>
             </div>
           </div>
 
-          <!-- 中：诊断详情 -->
-          <div class="result-detail">
-            <!-- 主结果 -->
-            <div class="result-hero" :class="topResult === 'normal' ? 'normal' : 'abnormal'">
-              <div class="result-hero-icon">
-                <el-icon v-if="topResult === 'normal'">
-                  <CircleCheck />
-                </el-icon>
-                <el-icon v-else>
-                  <Warning />
-                </el-icon>
+          <!-- 右：诊断详情 + 诊断报告（横向排列） -->
+          <div class="result-right-panel">
+            <!-- 诊断详情 -->
+            <div class="result-detail">
+              <!-- 主结果 -->
+              <div class="result-hero" :class="topResult === 'normal' ? 'normal' : 'abnormal'">
+                <div class="result-hero-icon">
+                  <el-icon v-if="topResult === 'normal'">
+                    <CircleCheck />
+                  </el-icon>
+                  <el-icon v-else>
+                    <Warning />
+                  </el-icon>
+                </div>
+                <div class="result-hero-text">
+                  <div class="result-hero-label">{{ resultLabel }}</div>
+                  <div class="result-hero-conf">置信度 {{ topConfidence }}%</div>
+                </div>
               </div>
-              <div class="result-hero-text">
-                <div class="result-hero-label">{{ resultLabel }}</div>
-                <div class="result-hero-conf">置信度 {{ topConfidence }}%</div>
-              </div>
-            </div>
 
-            <!-- 患者信息 -->
-            <div class="patient-info-section" v-if="currentPatient">
-              <div class="section-title">患者信息</div>
-              <div class="patient-info-grid">
-                <div class="info-row">
-                  <span class="info-label">姓名</span>
-                  <span class="info-value">{{ currentPatient.name }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">性别</span>
-                  <span class="info-value">{{ currentPatient.gender === 'male' ? '男' : '女' }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">年龄</span>
-                  <span class="info-value">{{ currentPatient.age }}岁</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">患者编号</span>
-                  <span class="info-value mono">{{ currentPatient.patient_no }}</span>
-                </div>
-                <div class="info-row" v-if="currentPatient.phone">
-                  <span class="info-label">联系电话</span>
-                  <span class="info-value">{{ currentPatient.phone }}</span>
-                </div>
-                <div class="info-row" v-if="currentPatient.id_card">
-                  <span class="info-label">身份证号</span>
-                  <span class="info-value mono">{{ currentPatient.id_card }}</span>
-                </div>
-                <div class="info-row full-width" v-if="currentPatient.medical_history">
-                  <span class="info-label">既往病史</span>
-                  <span class="info-value">{{ currentPatient.medical_history }}</span>
-                </div>
-                <div class="info-row full-width" v-if="currentPatient.allergy_history">
-                  <span class="info-label">过敏史</span>
-                  <span class="info-value">{{ currentPatient.allergy_history }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 概率分布 -->
-            <div class="prob-section">
-              <div class="prob-item" v-for="p in top5Probs" :key="p.disease_code">
-                <div class="prob-header">
-                  <span class="prob-dot" :style="{ background: probColor(p.disease_code) }"></span>
-                  <span class="prob-label">{{ p.disease_name_zh }}</span>
-                  <span class="prob-value">{{ (p.probability * 100).toFixed(1) }}%</span>
-                </div>
-                <div class="prob-bar">
-                  <div class="prob-fill"
-                    :style="{ width: p.probability * 100 + '%', background: probColor(p.disease_code) }">
+              <!-- 患者信息 -->
+              <div class="patient-info-section" v-if="currentPatient">
+                <div class="section-title">患者信息</div>
+                <div class="patient-info-grid">
+                  <div class="info-row">
+                    <span class="info-label">姓名</span>
+                    <span class="info-value">{{ currentPatient.name }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">性别</span>
+                    <span class="info-value">{{ currentPatient.gender === 'male' ? '男' : '女' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">年龄</span>
+                    <span class="info-value">{{ currentPatient.age }}岁</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">患者编号</span>
+                    <span class="info-value mono">{{ currentPatient.patient_no }}</span>
+                  </div>
+                  <div class="info-row" v-if="currentPatient.phone">
+                    <span class="info-label">联系电话</span>
+                    <span class="info-value">{{ currentPatient.phone }}</span>
+                  </div>
+                  <div class="info-row" v-if="currentPatient.id_card">
+                    <span class="info-label">身份证号</span>
+                    <span class="info-value mono">{{ currentPatient.id_card }}</span>
+                  </div>
+                  <div class="info-row full-width" v-if="currentPatient.medical_history">
+                    <span class="info-label">既往病史</span>
+                    <span class="info-value">{{ currentPatient.medical_history }}</span>
+                  </div>
+                  <div class="info-row full-width" v-if="currentPatient.allergy_history">
+                    <span class="info-label">过敏史</span>
+                    <span class="info-value">{{ currentPatient.allergy_history }}</span>
                   </div>
                 </div>
               </div>
+
+              <!-- 概率分布 -->
+              <div class="prob-section">
+                <div class="prob-item" v-for="p in top5Probs" :key="p.disease_code">
+                  <div class="prob-header">
+                    <span class="prob-dot" :style="{ background: probColor(p.disease_code) }"></span>
+                    <span class="prob-label">{{ p.disease_name_zh }}</span>
+                    <span class="prob-value">{{ (p.probability * 100).toFixed(1) }}%</span>
+                  </div>
+                  <div class="prob-bar">
+                    <div class="prob-fill"
+                      :style="{ width: p.probability * 100 + '%', background: probColor(p.disease_code) }">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 附加信息 -->
+              <div class="result-meta">
+                <div class="meta-item">
+                  <span class="meta-label">记录编号</span>
+                  <span class="meta-value mono">{{ result.diagnosis_no }}</span>
+                </div>
+                <div class="meta-item" v-if="result.ai_report?.ai_model_used">
+                  <span class="meta-label">AI模型</span>
+                  <span class="meta-value">{{ result.ai_report.ai_model_used }}</span>
+                </div>
+              </div>
             </div>
 
-            <!-- 附加信息 -->
-            <div class="result-meta">
-              <div class="meta-item">
-                <span class="meta-label">记录编号</span>
-                <span class="meta-value mono">{{ result.diagnosis_no }}</span>
+            <!-- 诊断报告区域 -->
+            <div class="report-section">
+              <!-- 报告生成中 -->
+              <div v-if="generatingReport" class="report-loading">
+                <div class="loading-spinner">
+                  <div class="spinner-ring"></div>
+                  <div class="spinner-ring"></div>
+                  <div class="spinner-ring"></div>
+                  <div class="spinner-icon">
+                    <el-icon :size="32" class="rotating-icon">
+                      <Document />
+                    </el-icon>
+                  </div>
+                </div>
+                <h4 class="loading-title">AI正在生成诊断报告</h4>
+                <p class="loading-desc">正在分析影像学表现，生成标准化医学报告...</p>
+                <div class="loading-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                  </div>
+                  <span class="progress-text">预计需要10-20秒</span>
+                </div>
               </div>
-              <div class="meta-item" v-if="result.ai_report?.ai_model_used">
-                <span class="meta-label">AI模型</span>
-                <span class="meta-value">{{ result.ai_report.ai_model_used }}</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- 右：操作面板 -->
-          <div class="result-actions-panel">
-            <div class="action-title">医生审核</div>
-            <div class="action-buttons">
-              <el-button size="large" @click="handleReview(true)" :loading="reviewing" class="action-btn confirm">
-                <el-icon><Select /></el-icon> 确认诊断
-              </el-button>
-              <el-button size="large" @click="showReviseDialog" class="action-btn revise">
-                <el-icon>
-                  <Edit />
-                </el-icon> 修正诊断
-              </el-button>
-              <el-button size="large" @click="handleGenerateReport" :loading="generatingReport"
-                class="action-btn report" :type="!reportContent ? 'primary' : 'default'" :class="{ 'report-pending': !reportContent }">
-                <el-icon>
-                  <Document />
-                </el-icon> {{ reportContent ? '重新生成' : '生成报告' }}
-              </el-button>
+              <!-- 报告未生成时的占位提示 -->
+              <div v-else-if="!reportContent" class="report-placeholder">
+                <div class="placeholder-icon">
+                  <el-icon :size="48">
+                    <Document />
+                  </el-icon>
+                </div>
+                <h4 class="placeholder-title">诊断报告待生成</h4>
+                <p class="placeholder-desc">请完成医生审核后，点击左侧「生成报告」按钮</p>
+                <div class="placeholder-tips">
+                  <div class="tip-item">
+                    <el-icon>
+                      <InfoFilled />
+                    </el-icon>
+                    <span>AI将根据诊断结果自动生成标准化医学报告</span>
+                  </div>
+                  <div class="tip-item">
+                    <el-icon>
+                      <InfoFilled />
+                    </el-icon>
+                    <span>报告包含影像学表现、诊断结论及治疗建议</span>
+                  </div>
+                  <div class="tip-item">
+                    <el-icon>
+                      <InfoFilled />
+                    </el-icon>
+                    <span>生成后可打印或导出为PDF格式</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 报告已生成时的内容 -->
+              <template v-else>
+                <div class="report-header-inline">
+                  <h4 class="report-title-inline">诊断报告</h4>
+                  <div class="report-actions-inline">
+                    <el-button size="small" @click="handlePrintReport">
+                      <el-icon>
+                        <Printer />
+                      </el-icon> 打印
+                    </el-button>
+                    <el-button type="primary" size="small" @click="handleGenerateReport" :loading="generatingReport">
+                      <el-icon>
+                        <Refresh />
+                      </el-icon> 重新生成
+                    </el-button>
+                  </div>
+                </div>
+                <div class="report-content-inline">
+                  <pre class="report-pre">{{ reportContent }}</pre>
+                </div>
+                <div class="report-footer-inline">
+                  <div class="footer-item">本报告由AI辅助诊断系统生成，仅供临床医生参考</div>
+                  <div class="footer-item">最终诊断以临床医生意见为准</div>
+                </div>
+              </template>
             </div>
-            <div class="action-note">{{ reportContent ? '确认或修正诊断结果后，可重新生成报告' : '检测完成！点击"生成报告"获取AI诊断报告' }}</div>
           </div>
         </div>
       </div>
@@ -322,70 +403,6 @@
         </div>
       </div>
     </div>
-
-    <!-- ===== 第三区：诊断报告 ===== -->
-    <div class="zone-card report-zone" v-if="result && reportContent" :class="{ active: currentStep === 4 }">
-      <div class="zone-header">
-        <div class="zone-badge report-badge">
-          <el-icon>
-            <Document />
-          </el-icon>
-        </div>
-        <div class="zone-title-group">
-          <h3 class="zone-title">诊断报告</h3>
-          <span class="zone-subtitle">Diagnosis Report</span>
-        </div>
-        <div class="zone-status">
-          <div class="report-toolbar">
-            <el-button size="small" @click="handlePrintReport">
-              <el-icon>
-                <Printer />
-              </el-icon> 打印报告
-            </el-button>
-            <el-button type="primary" size="small" @click="handleGenerateReport" :loading="generatingReport">
-              <el-icon>
-                <Refresh />
-              </el-icon> 重新生成
-            </el-button>
-          </div>
-        </div>
-      </div>
-      <div class="zone-body">
-        <div class="report-content-wrapper" id="print-report">
-          <div class="report-header">
-            <h2 class="report-title">胸部X光AI辅助诊断报告</h2>
-          </div>
-          <div class="report-body">
-            <div class="report-text-content">
-              <pre class="report-pre">{{ reportContent }}</pre>
-            </div>
-          </div>
-          <div class="report-footer">
-            <div class="report-footer-item">本报告由AI辅助诊断系统生成，仅供临床医生参考</div>
-            <div class="report-footer-item">最终诊断以临床医生意见为准</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 修正诊断对话框 -->
-    <el-dialog v-model="reviseDialogVisible" title="修正诊断结果" width="500px">
-      <el-form label-width="80px">
-        <el-form-item label="修正结果">
-          <el-select v-model="revisedResult" placeholder="选择修正结果" style="width:100%">
-            <el-option v-for="p in top5Probs" :key="p.disease_code" :label="p.disease_name_zh"
-              :value="p.disease_code" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="医生备注">
-          <el-input v-model="reviseRemark" type="textarea" :rows="3" placeholder="请输入修正说明" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="reviseDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleReview(false)">确认修正</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -393,9 +410,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { diagnoseSingleApi } from '@/api/diagnose'
 import { getPatientsApi } from '@/api/patients'
-import { approveReportApi, updateReportApi, regenerateReportApi } from '@/api/reports'
+import { regenerateReportApi } from '@/api/reports'
 import { ElMessage } from 'element-plus'
-import { User, Upload, Delete, Picture, Refresh, Printer, Cpu, CircleCheck, Warning, Select, Edit, Document, SetUp } from '@element-plus/icons-vue'
+import { User, Upload, Delete, Picture, Refresh, Printer, Cpu, CircleCheck, Warning, Document, InfoFilled, SetUp } from '@element-plus/icons-vue'
 import type { UploadFile } from 'element-plus'
 
 const formRef = ref()
@@ -403,15 +420,11 @@ const uploadRef = ref()
 const patientList = ref<any[]>([])
 const selectedPatientId = ref<number | undefined>()
 const diagnosing = ref(false)
-const reviewing = ref(false)
 const generatingReport = ref(false)
 const selectedFile = ref<File | null>(null)
 const imagePreviewUrl = ref('')
 const result = ref<any>(null)
 const reportContent = ref('')
-const reviseDialogVisible = ref(false)
-const revisedResult = ref('')
-const reviseRemark = ref('')
 
 const form = ref({ patient_id: undefined as number | undefined, symptoms: '', clinical_info: '' })
 
@@ -520,11 +533,13 @@ async function handleDiagnose() {
     formData.append('patient_id', String(selectedPatientId.value))
     if (form.value.symptoms) formData.append('symptoms', form.value.symptoms)
     if (form.value.clinical_info) formData.append('clinical_info', form.value.clinical_info)
-    // 先检测，不自动生成报告（用户点击"生成报告"时才生成）
+    // 先跳过报告生成，快速显示检测结果
     formData.append('skip_report', 'true')
     const res: any = await diagnoseSingleApi(formData)
     result.value = res.data
-    ElMessage.success('检测完成，请点击"生成报告"获取诊断报告')
+    ElMessage.success('检测完成，正在生成AI报告...')
+    // 后台异步生成报告
+    generateReportAsync()
   } catch {
     // error handled by interceptor
   } finally {
@@ -532,36 +547,27 @@ async function handleDiagnose() {
   }
 }
 
-async function handleReview(confirm: boolean) {
-  reviewing.value = true
+async function generateReportAsync() {
+  const reportId = result.value?.report_id
+  if (!reportId) return
+  generatingReport.value = true
   try {
-    const reportId = result.value?.report_id
-    if (!reportId) {
-      ElMessage.error('未找到报告记录')
-      return
+    const res: any = await regenerateReportApi(reportId)
+    if (res.data?.ai_generated_content) {
+      reportContent.value = res.data.ai_generated_content
+    } else if (res.data?.findings || res.data?.impression) {
+      const parts: string[] = []
+      if (res.data.findings) parts.push('【检查所见】\n' + res.data.findings)
+      if (res.data.impression) parts.push('【诊断意见】\n' + res.data.impression)
+      if (res.data.recommendations) parts.push('【建议】\n' + res.data.recommendations)
+      reportContent.value = parts.join('\n\n')
     }
-    if (confirm) {
-      await approveReportApi(reportId)
-      ElMessage.success('诊断已确认')
-    } else {
-      await updateReportApi(reportId, {
-        findings: revisedResult.value ? `修正诊断: ${top5Probs.value.find((p: any) => p.disease_code === revisedResult.value)?.disease_name_zh || revisedResult.value}` : undefined,
-        editor_notes: reviseRemark.value || undefined,
-      })
-      ElMessage.success('诊断已修正')
-    }
-    reviseDialogVisible.value = false
+    ElMessage.success('AI报告生成完成')
   } catch {
     // error handled by interceptor
   } finally {
-    reviewing.value = false
+    generatingReport.value = false
   }
-}
-
-function showReviseDialog() {
-  revisedResult.value = ''
-  reviseRemark.value = ''
-  reviseDialogVisible.value = true
 }
 
 async function handleGenerateReport() {
@@ -667,7 +673,7 @@ async function handlePrintReport() {
   .col-res{display:flex;flex-direction:column;gap:8px}
   .pat-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px}
   .pat-info .pat-header{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
-  .pat-info .pat-name{font-size:16px;font-weight:700;color:#0f172a}
+  .pat-info .pat-name{font-size:17px;font-weight:700;color:#0f172a}
   .pat-info .pat-ga{font-size:11px;color:#64748b}
   .pat-info .pat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:10px}
   .pat-info .pi-row{display:flex;justify-content:space-between}
@@ -801,7 +807,7 @@ onMounted(async () => {
         flex-shrink: 0;
 
         span {
-          font-size: 15px;
+          font-size: 17px;
           font-weight: 700;
           color: var(--text-muted);
           transition: color 0.4s ease;
@@ -946,7 +952,7 @@ onMounted(async () => {
         flex: 1;
 
         .zone-title {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 600;
           color: var(--text-primary);
           margin: 0;
@@ -1006,7 +1012,7 @@ onMounted(async () => {
       min-width: 0;
 
       .brief-name {
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 700;
         color: var(--text-primary);
         display: flex;
@@ -1066,7 +1072,7 @@ onMounted(async () => {
 
   .diagnose-btn {
     height: 44px;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     border-radius: var(--radius-md) !important;
     background: linear-gradient(135deg, var(--primary), #06B6D4) !important;
@@ -1187,9 +1193,26 @@ onMounted(async () => {
   // ========== 诊断结果区 ==========
   .result-layout {
     display: grid;
-    grid-template-columns: 240px 1fr 200px;
+    grid-template-columns: 200px 1fr;
     gap: 16px;
     align-items: start;
+  }
+
+  .result-left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .result-right-panel {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .result-detail {
+    padding: 10px;
   }
 
   .result-images {
@@ -1425,7 +1448,7 @@ onMounted(async () => {
     }
   }
 
-  // 操作面板
+  // 操作面板 - 位于影像分析区域底部
   .result-actions-panel {
     background: var(--card-bg);
     border: 1px solid var(--glass-border);
@@ -1433,6 +1456,7 @@ onMounted(async () => {
     padding: 16px;
     display: flex;
     flex-direction: column;
+    margin-top: auto;
 
     .action-title {
       font-size: 13px;
@@ -1460,18 +1484,6 @@ onMounted(async () => {
         align-items: center !important;
         justify-content: center !important;
 
-        &.confirm {
-          background: linear-gradient(135deg, var(--primary), #06B6D4) !important;
-          border: none !important;
-          color: #fff !important;
-        }
-
-        &.revise {
-          background: rgba(245, 158, 11, 0.15) !important;
-          border: 1px solid rgba(245, 158, 11, 0.3) !important;
-          color: var(--orange) !important;
-        }
-
         &.report {
           background: linear-gradient(135deg, var(--purple), #7C3AED) !important;
           border: none !important;
@@ -1493,6 +1505,237 @@ onMounted(async () => {
       margin-top: 12px;
       line-height: 1.5;
       padding: 0 4px;
+    }
+  }
+
+  // 诊断报告区域（内联）
+  .report-section {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-top: 8px;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    // 报告生成中加载动画
+    .report-loading {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+
+      .loading-spinner {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin-bottom: 24px;
+
+        .spinner-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 3px solid transparent;
+          animation: spin 1.5s linear infinite;
+
+          &:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            border-top-color: var(--primary);
+            animation-duration: 1.5s;
+          }
+
+          &:nth-child(2) {
+            width: 90px;
+            height: 90px;
+            top: 15px;
+            left: 15px;
+            border-right-color: var(--purple);
+            animation-duration: 2s;
+            animation-direction: reverse;
+          }
+
+          &:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            top: 30px;
+            left: 30px;
+            border-bottom-color: var(--green);
+            animation-duration: 2.5s;
+          }
+        }
+
+        .spinner-icon {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: var(--primary);
+
+          .rotating-icon {
+            animation: rotate-icon 3s ease-in-out infinite;
+          }
+        }
+      }
+
+      .loading-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+      }
+
+      .loading-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 0 0 24px 0;
+      }
+
+      .loading-progress {
+        width: 100%;
+        max-width: 280px;
+
+        .progress-bar {
+          height: 4px;
+          background: var(--bg-tertiary);
+          border-radius: 2px;
+          overflow: hidden;
+          margin-bottom: 8px;
+
+          .progress-fill {
+            height: 100%;
+            width: 30%;
+            background: linear-gradient(90deg, var(--primary), var(--purple));
+            border-radius: 2px;
+            animation: progress-move 2s ease-in-out infinite;
+          }
+        }
+
+        .progress-text {
+          font-size: 12px;
+          color: var(--text-muted);
+        }
+      }
+    }
+
+    // 占位提示样式
+    .report-placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+
+      .placeholder-icon {
+        color: var(--text-muted);
+        opacity: 0.5;
+        margin-bottom: 16px;
+      }
+
+      .placeholder-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+      }
+
+      .placeholder-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 0 0 24px 0;
+      }
+
+      .placeholder-tips {
+        width: 100%;
+        max-width: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .tip-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 10px 12px;
+          background: var(--bg-tertiary);
+          border: 1px solid var(--glass-border);
+          border-radius: var(--radius-md);
+          font-size: 12px;
+          color: var(--text-secondary);
+          line-height: 1.5;
+
+          .el-icon {
+            color: var(--primary);
+            flex-shrink: 0;
+            margin-top: 1px;
+          }
+
+          span {
+            text-align: left;
+          }
+        }
+      }
+    }
+
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+      margin-bottom: 16px;
+    }
+
+    .report-header-inline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+
+      .report-title-inline {
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+      }
+
+      .report-actions-inline {
+        display: flex;
+        gap: 8px;
+      }
+    }
+
+    .report-content-inline {
+      .report-pre {
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        font-size: 13px;
+        line-height: 2;
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+        word-break: break-all;
+        margin: 0;
+        padding: 16px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        max-height: 400px;
+        overflow-y: auto;
+      }
+    }
+
+    .report-footer-inline {
+      text-align: center;
+      padding-top: 12px;
+      margin-top: 16px;
+      border-top: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      font-size: 11px;
+
+      .footer-item {
+        margin-bottom: 2px;
+      }
     }
   }
 
@@ -1595,22 +1838,28 @@ onMounted(async () => {
   // ========== 响应式 ==========
   @media (max-width: 1200px) {
     .result-layout {
-      grid-template-columns: 220px 1fr 180px;
+      grid-template-columns: 260px 1fr;
       gap: 12px;
     }
   }
 
   @media (max-width: 1024px) {
     .result-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .result-left-panel {
+      display: grid;
       grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .result-right-panel {
+      grid-template-columns: 1fr;
     }
 
     .result-actions-panel {
       grid-column: 1 / -1;
-
-      .action-buttons {
-        flex-direction: row;
-      }
     }
   }
 
@@ -1649,7 +1898,46 @@ onMounted(async () => {
 }
 
 @keyframes reportPulse {
-  0%, 100% { box-shadow: 0 0 12px rgba(16, 185, 129, 0.4); }
-  50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.7); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.7);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotate-icon {
+
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+}
+
+@keyframes progress-move {
+  0% {
+    margin-left: -30%;
+  }
+
+  100% {
+    margin-left: 100%;
+  }
 }
 </style>

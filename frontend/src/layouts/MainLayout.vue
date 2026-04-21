@@ -68,7 +68,7 @@
             @change="handleThemeChange"
             style="--el-switch-on-color: var(--purple); --el-switch-off-color: var(--orange);" />
           <el-badge :value="pendingCount" :hidden="pendingCount === 0" :max="99">
-            <el-icon :size="18" class="header-icon" @click="$router.push('/history')">
+            <el-icon :size="18" class="header-icon" @click="$router.push('/staff/history')">
               <Bell />
             </el-icon>
           </el-badge>
@@ -132,7 +132,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Fold, Expand, ArrowDown, Setting, Bell, User, Lock, SwitchButton,
-  DataBoard, FirstAidKit, Compass, ChatDotRound, Clock, Files, Stamp, Moon, Sunny,
+  DataBoard, FirstAidKit, Compass, ChatDotRound, Clock, Files, Stamp, Edit, Moon, Sunny,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
@@ -148,19 +148,21 @@ const appStore = useAppStore()
 const pendingCount = ref(0)
 
 const businessMenus = [
-  { path: '/dashboard', label: '数据看板', icon: DataBoard },
-  { path: '/diagnose', label: '诊断中心', icon: FirstAidKit },
-  { path: '/batch', label: '批量诊断', icon: Files },
-  { path: '/triage', label: '智能分诊', icon: Compass },
-  { path: '/chat', label: 'AI咨询', icon: ChatDotRound },
-  { path: '/history', label: '诊断历史', icon: Clock },
-  { path: '/approval', label: '诊断审批', icon: Stamp },
+  { path: '/staff/dashboard', label: '数据看板', icon: DataBoard },
+  { path: '/staff/diagnose', label: '诊断中心', icon: FirstAidKit },
+  { path: '/staff/batch', label: '批量诊断', icon: Files },
+  { path: '/staff/triage', label: '智能分诊', icon: Compass },
+  { path: '/staff/chat', label: 'AI咨询', icon: ChatDotRound },
+  { path: '/staff/history', label: '诊断历史', icon: Clock },
+  { path: '/staff/approval', label: '诊断审批', icon: Stamp },
+  { path: '/staff/revise', label: '诊断修正', icon: Edit },
 ]
 
 const currentTitle = computed(() => (route.meta.title as string) || '')
 const titleEnMap: Record<string, string> = {
   '数据看板': 'Dashboard', '诊断中心': 'Diagnose', '智能分诊': 'Smart Triage',
-  'AI咨询': 'AI Chat', '诊断历史': 'Records', '批量诊断': 'Batch', '诊断审批': 'Approval',
+  'AI咨询': 'AI Chat', '诊断历史': 'Records', '批量诊断': 'Batch',
+  '诊断审批': 'Approval', '诊断修正': 'Revise',
 }
 const currentTitleEn = computed(() => titleEnMap[currentTitle.value] || currentTitle.value)
 const isAdminActive = computed(() => route.path.startsWith('/admin'))
@@ -344,7 +346,7 @@ onMounted(async () => {
 }
 
 .nav-label {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   white-space: nowrap;
 }

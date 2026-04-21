@@ -28,15 +28,6 @@
       </div>
     </div>
 
-    <!-- 顶部操作栏（检测完成后显示全部清空） -->
-    <div v-if="(imageItems.length > 0 || diagnoses.length > 0) && !diagnosing" class="top-actions">
-      <el-button type="danger" plain @click="resetAll">
-        <el-icon>
-          <Delete />
-        </el-icon> 全部清空
-      </el-button>
-    </div>
-
     <!-- ===== 第一步：选择影像（有诊断结果后隐藏）===== -->
     <div class="zone-card" :class="{ active: currentStep === 1 && !diagnosing }" v-if="diagnoses.length === 0">
       <div class="zone-header">
@@ -285,17 +276,33 @@
                 </div>
               </div>
               <!-- 报告内容：直接显示在该患者卡片下方 -->
-              <div v-if="d.status === 'done' && d.reportContent" class="result-report">
-                <div class="result-report-header">
-                  <span class="result-report-title">
-                    <el-icon>
-                      <Document />
-                    </el-icon> AI诊断报告
-                  </span>
-                  <el-button type="primary" link size="small" class="action-link"
-                    @click="viewReport(d)">打印报告</el-button>
+              <div v-if="(d.status === 'reporting' || d.status === 'done') && d.data" class="result-report">
+                <!-- 报告生成中 -->
+                <div v-if="!d.reportContent" class="report-loading-inline">
+                  <div class="inline-spinner">
+                    <div class="spinner-ring-sm"></div>
+                    <div class="spinner-ring-sm"></div>
+                    <div class="spinner-icon-sm">
+                      <el-icon :size="16" class="rotating-icon-sm">
+                        <Document />
+                      </el-icon>
+                    </div>
+                  </div>
+                  <span class="report-loading-text">AI正在生成诊断报告...</span>
                 </div>
-                <pre class="result-report-text">{{ d.reportContent }}</pre>
+                <!-- 报告已生成 -->
+                <template v-else>
+                  <div class="result-report-header">
+                    <span class="result-report-title">
+                      <el-icon>
+                        <Document />
+                      </el-icon> AI诊断报告
+                    </span>
+                    <el-button type="primary" link size="small" class="action-link"
+                      @click="viewReport(d)">打印报告</el-button>
+                  </div>
+                  <pre class="result-report-text">{{ d.reportContent }}</pre>
+                </template>
               </div>
               <div v-if="d.status === 'error'" class="result-error">
                 <el-icon>
@@ -681,7 +688,7 @@ async function stopDiagnosis() {
 /** 轮询进度 */
 function startPolling() {
   stopPolling()
-  pollTimer = setInterval(pollProgress, 1500)
+  pollTimer = setInterval(pollProgress, 3000) // 3秒轮询一次，避免触发限流
   // 立即查一次
   pollProgress()
 }
@@ -717,7 +724,24 @@ async function pollProgress() {
 
     // 检查是否完成（所有项目都必须是 done 或 error 才算真正完成）
     const hasReporting = (data.results || []).some((r: any) => r.status === 'reporting')
+    const hasGeneratingReport = diagnoses.value.some(d =>
+      (d.status === 'done' || d.status === 'reporting') && !d.reportContent
+    )
+
+    // 检测是否刚刚完成所有报告生成（之前有报告在生成，现在都完成了）
+    const prevHasGeneratingReport = diagnoses.value.some(d =>
+      (d.status === 'done' || d.status === 'reporting') && d.reportStatus === 'generating'
+    )
+
     if (!hasReporting && ['completed', 'partial_failed', 'failed', 'cancelled'].includes(data.status)) {
+      // 后端批次已完成，检查是否所有报告都生成了
+      if (hasGeneratingReport) {
+        // 还有报告在生成中，继续轮询（不显示消息，避免重复提示）
+        localStorage.setItem('batch_diagnoses', JSON.stringify(diagnoses.value))
+        return // 不停止轮询，继续等待报告生成
+      }
+
+      // 所有报告都完成了，停止轮询
       diagnosing.value = false
       stopPolling()
       localStorage.removeItem('batch_active_id')
@@ -727,18 +751,33 @@ async function pollProgress() {
       localStorage.setItem('batch_diagnoses', JSON.stringify(diagnoses.value))
       const successCount = diagnoses.value.filter(d => d.status === 'done').length
       const failCount = diagnoses.value.filter(d => d.status === 'error').length
-      const reportingCount = diagnoses.value.filter(d => d.status === 'reporting').length
+      const reportDoneCount = diagnoses.value.filter(d => d.status === 'done' && d.reportContent).length
+
       if (data.cancelled) {
         ElMessage.warning(`检测已停止：成功${successCount}，失败${failCount}`)
+      } else if (prevHasGeneratingReport && reportDoneCount === successCount) {
+        // 刚刚完成所有报告生成
+        ElMessage.success(`批量诊断完成：成功${successCount}，失败${failCount}，AI报告已全部生成`)
       } else {
-        ElMessage.success(`批量诊断完成：成功${successCount}，失败${failCount}${reportingCount ? `，生成中${reportingCount}` : ''}`)
+        ElMessage.success(`批量诊断完成：成功${successCount}，失败${failCount}`)
       }
     } else {
       // 还在进行中，持续更新 localStorage
       localStorage.setItem('batch_diagnoses', JSON.stringify(diagnoses.value))
     }
-  } catch {
-    // 网络错误时继续轮询
+  } catch (err: any) {
+    console.error('轮询进度失败:', err)
+    // 如果是429限流错误，暂停轮询5秒后再试
+    if (err.response?.status === 429) {
+      console.warn('触发限流，暂停轮询5秒...')
+      stopPolling()
+      setTimeout(() => {
+        if (activeBatchId.value) {
+          startPolling()
+        }
+      }, 5000)
+    }
+    // 其他网络错误时继续轮询
   }
 }
 
@@ -1045,7 +1084,7 @@ body{font-family:'Microsoft YaHei','PingFang SC',sans-serif;background:#fff;colo
 .col-res{display:flex;flex-direction:column;gap:8px}
 .pat-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px}
 .pat-info .pat-header{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
-.pat-info .pat-name{font-size:16px;font-weight:700;color:#0f172a}
+.pat-info .pat-name{font-size:17px;font-weight:700;color:#0f172a}
 .pat-info .pat-ga{font-size:11px;color:#64748b}
 .pat-info .pat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:10px}
 .pat-info .pi-row{display:flex;justify-content:space-between}
@@ -1168,7 +1207,7 @@ onUnmounted(() => {
         flex-shrink: 0;
 
         span {
-          font-size: 15px;
+          font-size: 17px;
           font-weight: 700;
           color: var(--text-muted);
           transition: color 0.4s ease;
@@ -1300,7 +1339,7 @@ onUnmounted(() => {
         flex: 1;
 
         .zone-title {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 600;
           color: var(--text-primary);
           margin: 0;
@@ -1546,17 +1585,6 @@ onUnmounted(() => {
     align-items: center;
   }
 
-  .top-actions {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 20px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-  }
 
   // 检测结果 - 单列（含图片和概率条）
   .result-grid {
@@ -1794,6 +1822,65 @@ onUnmounted(() => {
         }
       }
 
+      // 报告生成中加载动画（行内）
+      .report-loading-inline {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        border: 1px solid var(--glass-border);
+
+        .inline-spinner {
+          position: relative;
+          width: 32px;
+          height: 32px;
+          flex-shrink: 0;
+
+          .spinner-ring-sm {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            animation: spin 1.2s linear infinite;
+
+            &:nth-child(1) {
+              width: 32px;
+              height: 32px;
+              border-top-color: var(--primary);
+            }
+
+            &:nth-child(2) {
+              width: 20px;
+              height: 20px;
+              top: 6px;
+              left: 6px;
+              border-right-color: var(--purple);
+              animation-duration: 1.5s;
+              animation-direction: reverse;
+            }
+          }
+
+          .spinner-icon-sm {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary);
+
+            .rotating-icon-sm {
+              animation: rotate-icon 2.5s ease-in-out infinite;
+            }
+          }
+        }
+
+        .report-loading-text {
+          font-size: 12px;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+      }
+
       .result-report-text {
         white-space: pre-wrap;
         font-family: 'Microsoft YaHei', sans-serif;
@@ -1839,6 +1926,28 @@ onUnmounted(() => {
   &:hover {
     background: transparent !important;
     opacity: 0.8;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotate-icon {
+
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.1);
   }
 }
 </style>

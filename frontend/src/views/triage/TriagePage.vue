@@ -18,7 +18,7 @@
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="年龄" prop="age">
-                  <el-input-number v-model="form.age" :min="0" :max="150" style="width:100%" placeholder="岁" />
+                  <el-input-number v-model="form.age" :min="0" :max="150" class="age-input" placeholder="岁" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
@@ -164,14 +164,15 @@
                     class="duration-desc">间歇性</span></el-radio>
               </el-radio-group>
             </el-form-item>
-            <el-input v-model="form.durationDetail" placeholder="补充说明：如每天发作几次、每次持续多久等" style="margin-top: 8px" />
+            <el-input v-model="form.durationDetail" placeholder="补充说明：如每天发作几次、每次持续多久等" class="duration-detail-input" />
           </div>
 
           <!-- 病史 -->
           <div class="form-section">
             <div class="section-title">既往病史</div>
             <el-form-item prop="medical_history">
-              <el-input v-model="form.medical_history" type="textarea" :rows="3" placeholder="请描述既往病史、用药情况、过敏史等" />
+              <el-input v-model="form.medical_history" type="textarea" :rows="3" placeholder="请描述既往病史、用药情况、过敏史等"
+                class="history-textarea" />
             </el-form-item>
           </div>
 
@@ -527,6 +528,63 @@ function getAdviceIcon(title: string) {
 </script>
 
 <style scoped lang="scss">
+// 全局统一表单元素圆角
+:deep(.el-input__wrapper) {
+  border-radius: var(--radius-md) !important;
+}
+
+:deep(.el-textarea__inner) {
+  border-radius: var(--radius-md) !important;
+}
+
+:deep(.el-input-number__wrapper) {
+  border-radius: var(--radius-md) !important;
+}
+
+// 年龄输入框样式
+.age-input {
+  width: 100%;
+
+  :deep(.el-input-number__wrapper) {
+    border-radius: var(--radius-md) !important;
+    background-color: var(--card-bg) !important;
+    border-color: var(--glass-border) !important;
+    box-shadow: none !important;
+    transition: all 0.3s ease !important;
+    padding: 4px 12px !important;
+
+    &:hover {
+      border-color: var(--primary) !important;
+    }
+
+    &.is-focus {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 1px var(--primary) inset !important;
+    }
+  }
+
+  :deep(.el-input__inner) {
+    color: var(--text-primary) !important;
+    font-size: 14px;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+
+  :deep(.el-input-number__decrease),
+  :deep(.el-input-number__increase) {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--glass-border) !important;
+
+    &:hover {
+      color: var(--primary) !important;
+      border-color: var(--primary) !important;
+    }
+  }
+}
+
 .triage-page {
   .triage-layout {
     display: flex;
@@ -540,7 +598,7 @@ function getAdviceIcon(title: string) {
   margin-top: 28px;
 
   .section-title {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 16px;
@@ -665,6 +723,8 @@ function getAdviceIcon(title: string) {
     background-color: var(--card-bg) !important;
     border-color: var(--glass-border) !important;
     box-shadow: none !important;
+    border-radius: var(--radius-md) !important;
+    transition: all 0.3s ease !important;
 
     &:hover {
       border-color: var(--primary) !important;
@@ -723,6 +783,12 @@ function getAdviceIcon(title: string) {
     border-color: var(--primary);
     box-shadow: 0 8px 24px rgba(34, 211, 238, 0.15);
   }
+
+  // 统一卡片内输入框圆角
+  :deep(.el-input__wrapper),
+  :deep(.el-textarea__inner) {
+    border-radius: var(--radius-md) !important;
+  }
 }
 
 .symptom-detail-header {
@@ -746,7 +812,7 @@ function getAdviceIcon(title: string) {
   }
 
   .symptom-detail-title {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text-primary);
   }
@@ -805,6 +871,12 @@ function getAdviceIcon(title: string) {
     font-weight: 500;
   }
 
+  // 统一输入框圆角与按钮一致
+  :deep(.el-input__wrapper),
+  :deep(.el-textarea__inner) {
+    border-radius: var(--radius-md) !important;
+  }
+
   :deep(.el-radio-group) {
     display: flex;
     flex-wrap: wrap;
@@ -817,7 +889,7 @@ function getAdviceIcon(title: string) {
     color: var(--text-secondary);
     font-weight: 500;
     padding: 8px 16px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md) !important;
     transition: all 0.3s ease;
 
     &:hover {
@@ -873,6 +945,15 @@ function getAdviceIcon(title: string) {
       color: var(--text-primary);
     }
   }
+
+  // 统一输入框与其他控件的圆角
+  :deep(.el-input__wrapper) {
+    border-radius: var(--radius-md) !important;
+  }
+
+  :deep(.el-textarea__inner) {
+    border-radius: var(--radius-md) !important;
+  }
 }
 
 .duration-group {
@@ -902,6 +983,8 @@ function getAdviceIcon(title: string) {
   transition: all 0.3s ease;
   display: flex !important;
   align-items: center;
+  position: relative;
+  overflow: hidden;
   position: relative;
   overflow: hidden;
 
@@ -938,7 +1021,7 @@ function getAdviceIcon(title: string) {
   }
 
   .duration-label {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 500;
     color: var(--text-primary);
     margin-right: 16px;
@@ -952,10 +1035,51 @@ function getAdviceIcon(title: string) {
   }
 }
 
+// 病史 textarea 统一圆角
+.history-textarea {
+  :deep(.el-textarea__inner) {
+    border-radius: var(--radius-md) !important;
+    background-color: var(--card-bg) !important;
+    border-color: var(--glass-border) !important;
+    transition: all 0.3s ease !important;
+
+    &:hover {
+      border-color: var(--primary) !important;
+    }
+
+    &:focus {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 1px var(--primary) inset !important;
+    }
+  }
+}
+
+// 持续时间补充输入框统一圆角
+.duration-detail-input {
+  width: 100%;
+  margin-top: 8px;
+
+  :deep(.el-input__wrapper) {
+    border-radius: var(--radius-md) !important;
+    background-color: var(--card-bg) !important;
+    border-color: var(--glass-border) !important;
+    transition: all 0.3s ease !important;
+
+    &:hover {
+      border-color: var(--primary) !important;
+    }
+
+    &.is-focus {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 1px var(--primary) inset !important;
+    }
+  }
+}
+
 .submit-btn {
   width: 100%;
   height: 52px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   margin-top: 12px;
   border-radius: var(--radius-lg);
@@ -1153,7 +1277,7 @@ function getAdviceIcon(title: string) {
   .risk-level-badge {
     padding: 8px 20px;
     border-radius: 24px;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     backdrop-filter: blur(10px);
   }
@@ -1187,7 +1311,7 @@ function getAdviceIcon(title: string) {
   }
 
   .risk-desc {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 500;
     position: relative;
     z-index: 1;
@@ -1269,7 +1393,7 @@ function getAdviceIcon(title: string) {
   }
 
   .disease-name {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 8px;
@@ -1358,7 +1482,7 @@ function getAdviceIcon(title: string) {
   }
 
   .advice-title {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     margin-bottom: 6px;
   }

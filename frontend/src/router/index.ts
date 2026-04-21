@@ -5,6 +5,28 @@ import type { RouteRecordRaw } from 'vue-router'
 const routes: RouteRecordRaw[] = [
   // ===== 公开页面 =====
   {
+    path: '/',
+    name: 'Home',
+    redirect: (to) => {
+      const token = localStorage.getItem('token')
+      const userStr = localStorage.getItem('user')
+      let userRole = ''
+
+      if (userStr) {
+        try { userRole = JSON.parse(userStr).role } catch { /* ignore */ }
+      }
+
+      // 已登录：根据角色跳转
+      if (token) {
+        return userRole === 'patient' ? '/patient/home' : '/staff/dashboard'
+      }
+
+      // 未登录：默认跳转到医护登录页（可根据需求改为患者登录或自定义选择页）
+      return '/login'
+    },
+    meta: { public: true },
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/login/LoginPage.vue'),
@@ -21,15 +43,49 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/patient',
     name: 'PatientPortal',
-    component: () => import('@/views/patient/PatientPage.vue'),
+    component: () => import('@/views/patient/MainPage.vue'),
     meta: { title: '患者门户', role: 'patient' },
+    redirect: '/patient/home',
+    children: [
+      {
+        path: 'home',
+        name: 'PatientHome',
+        component: () => import('@/views/patient/HomePage.vue'),
+        meta: { title: '首页', role: 'patient' },
+      },
+      {
+        path: 'report',
+        name: 'PatientReport',
+        component: () => import('@/views/patient/ReportListPage.vue'),
+        meta: { title: '诊断报告', role: 'patient' },
+      },
+      {
+        path: 'history',
+        name: 'PatientHistory',
+        component: () => import('@/views/patient/HistoryPage.vue'),
+        meta: { title: '就诊历史', role: 'patient' },
+      },
+      {
+        path: 'triage',
+        name: 'PatientTriage',
+        component: () => import('@/views/patient/TriagePage.vue'),
+        meta: { title: '智能分诊', role: 'patient' },
+      },
+      {
+        path: 'chat',
+        name: 'PatientChat',
+        component: () => import('@/views/patient/ChatPage.vue'),
+        meta: { title: 'AI咨询', role: 'patient' },
+      },
+    ],
   },
 
   // ===== 医护人员系统（MainLayout）=====
   {
-    path: '/',
+    path: '/staff',
     component: () => import('@/layouts/MainLayout.vue'),
-    redirect: '/dashboard',
+    redirect: '/staff/dashboard',
+    meta: { requiresAuth: true }, // 需要登录才能访问
     children: [
       {
         path: 'dashboard',
@@ -66,6 +122,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Approval',
         component: () => import('@/views/approval/ApprovalPage.vue'),
         meta: { title: '诊断审批', icon: 'Stamp' },
+      },
+      {
+        path: 'revise',
+        name: 'Revise',
+        component: () => import('@/views/revise/RevisePage.vue'),
+        meta: { title: '诊断修正', icon: 'Edit' },
       },
       {
         path: 'batch',
@@ -152,9 +214,9 @@ router.beforeEach((to, _from, next) => {
     if (token) {
       // 已登录：根据角色跳转到对应首页，不能停留在登录页
       if (userRole === 'patient') {
-        next('/patient')
+        next('/patient/home')
       } else {
-        next('/dashboard')
+        next('/staff/dashboard')
       }
       return
     }
@@ -164,7 +226,13 @@ router.beforeEach((to, _from, next) => {
 
   // ========== 未登录 ==========
   if (!token) {
-    next('/login')
+    // 如果访问的是患者门户，跳转到患者登录页
+    if (to.path.startsWith('/patient')) {
+      next('/patient-login')
+    } else {
+      // 否则跳转到医护登录页
+      next('/login')
+    }
     return
   }
 
@@ -175,7 +243,7 @@ router.beforeEach((to, _from, next) => {
       next()
     } else {
       // 患者试图访问医护页面 → 强制跳回患者门户
-      next('/patient')
+      next('/patient/home')
     }
     return
   }
@@ -183,13 +251,13 @@ router.beforeEach((to, _from, next) => {
   // ========== 医护人员权限 ==========
   // 患者专属页面，医护人员无法访问
   if (to.meta.role === 'patient') {
-    next('/dashboard')
+    next('/staff/dashboard')
     return
   }
 
   // 管理员页面权限检查
   if (to.meta.role === 'admin' && userRole !== 'admin') {
-    next('/dashboard')
+    next('/staff/dashboard')
     return
   }
 

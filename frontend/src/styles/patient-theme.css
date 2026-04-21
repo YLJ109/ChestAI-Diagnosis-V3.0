@@ -1,0 +1,541 @@
+/* ============================================
+   患者门户专属 - 双主题设计系统
+   医疗政务官方色系 | B端后台商务风格
+   参考医护人员页面的高品质设计
+   ============================================ */
+
+/* ========================
+   明亮模式 (默认) - B端后台清爽风格
+   ======================== */
+:root[data-theme="light"] .patient-portal,
+.patient-portal[data-theme="light"] {
+    /* ===== 背景色 - 清爽浅蓝灰 ===== */
+    --patient-bg-primary: #F5F7FA;
+    --patient-bg-secondary: #FFFFFF;
+    --patient-bg-tertiary: #EBEDF2;
+    --patient-bg-gradient: linear-gradient(135deg, #E8F4FD 0%, #F5F7FA 50%, #F0F4F8 100%);
+
+    /* ===== 主色调 - 浅天青渐变蓝色（医疗政务官方色系）===== */
+    --patient-primary: #3B82F6;
+    /* 商务蓝 */
+    --patient-primary-rgb: 59, 130, 246;
+    --patient-primary-light: rgba(59, 130, 246, 0.08);
+    --patient-primary-lighter: rgba(59, 130, 246, 0.04);
+    --patient-primary-dark: #2563EB;
+    --patient-accent-cyan: #06B6D4;
+
+    /* ===== 文字色 - 深灰色正文 ===== */
+    --patient-text-primary: #1F2937;
+    --patient-text-secondary: #6B7280;
+    --patient-text-muted: #9CA3AF;
+
+    /* ===== 卡片 - 纯白底色+柔和投影 ===== */
+    --patient-card-bg: #FFFFFF;
+    --patient-card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    --patient-card-shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.1);
+    --patient-card-border: #E5E7EB;
+    --patient-card-border-hover: #3B82F6;
+
+    /* ===== 玻璃态效果（轻量级）===== */
+    --patient-glass-bg: rgba(255, 255, 255, 0.85);
+    --patient-glass-border: rgba(59, 130, 246, 0.12);
+    --patient-glass-blur: blur(12px);
+
+    /* ===== 圆角 - B端后台大圆角 ===== */
+    --patient-radius-sm: 8px;
+    --patient-radius-md: 12px;
+    --patient-radius-lg: 16px;
+    --patient-radius-xl: 20px;
+    --patient-radius-2xl: 24px;
+    --patient-radius-full: 9999px;
+
+    /* ===== 渐变组合 - 医疗政务风格 ===== */
+    --patient-gradient-medical: linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%);
+    --patient-gradient-medical-subtle: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+    --patient-gradient-bg: linear-gradient(135deg, #E8F4FD 0%, #F5F7FA 50%, #F0F4F8 100%);
+}
+
+/* ========================
+   暗黑模式
+   ======================== */
+:root[data-theme="dark"] .patient-portal,
+.patient-portal[data-theme="dark"] {
+    /* ===== 背景色 - 专业深炭灰 ===== */
+    --patient-bg-primary: #0F172A;
+    --patient-bg-secondary: #1E293B;
+    --patient-bg-tertiary: #334155;
+
+    /* ===== 主色调 - 亮蓝色（深色模式适配）===== */
+    --patient-primary: #60A5FA;
+    --patient-primary-rgb: 96, 165, 250;
+    --patient-primary-light: rgba(96, 165, 250, 0.15);
+    --patient-primary-dark: #3B82F6;
+    --patient-accent-cyan: #22D3EE;
+
+    /* ===== 文字色 - 高对比度 ===== */
+    --patient-text-primary: #F1F5F9;
+    --patient-text-secondary: #CBD5E1;
+    --patient-text-muted: #94A3B8;
+
+    /* ===== 卡片 - 深色背景+微弱边框 ===== */
+    --patient-card-bg: #1E293B;
+    --patient-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --patient-card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --patient-card-border: #475569;
+
+    /* ===== 玻璃态效果 ===== */
+    --patient-glass-bg: rgba(30, 41, 59, 0.7);
+    --patient-glass-border: rgba(96, 165, 250, 0.2);
+    --patient-glass-blur: none;
+
+    /* ===== 圆角 ===== */
+    --patient-radius-sm: 8px;
+    --patient-radius-md: 12px;
+    --patient-radius-lg: 16px;
+    --patient-radius-xl: 20px;
+
+    /* ===== 渐变组合 ===== */
+    --patient-gradient-medical: linear-gradient(135deg, #60A5FA 0%, #22D3EE 100%);
+    --patient-gradient-medical-subtle: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, rgba(34, 211, 238, 0.1) 100%);
+}
+
+/* ============================================
+   患者门户全局样式覆盖 - B端后台清爽风格
+   ============================================ */
+
+/* 确保患者门户使用独立的主题变量 */
+.patient-portal {
+    background: var(--patient-bg-gradient) !important;
+    color: var(--patient-text-primary) !important;
+}
+
+/* 患者门户卡片样式 - B端清爽风格 */
+.patient-portal .glass-card,
+.patient-portal .el-card {
+    background: var(--patient-card-bg) !important;
+    backdrop-filter: var(--patient-glass-blur) !important;
+    border: 1px solid var(--patient-glass-border) !important;
+    box-shadow: var(--patient-card-shadow) !important;
+    border-radius: var(--patient-radius-xl) !important;
+    transition: all 0.3s ease !important;
+}
+
+.patient-portal .glass-card:hover,
+.patient-portal .el-card:hover {
+    box-shadow: var(--patient-card-shadow-hover) !important;
+    border-color: var(--patient-card-border-hover) !important;
+}
+
+/* 患者门户按钮样式 */
+.patient-portal .el-button--primary {
+    background: var(--patient-primary-dark) !important;
+    border-color: var(--patient-primary-dark) !important;
+}
+
+.patient-portal .el-button--primary:hover {
+    background: var(--patient-primary) !important;
+    border-color: var(--patient-primary) !important;
+}
+
+/* 患者门户输入框样式 */
+.patient-portal .el-input__wrapper {
+    background: var(--patient-bg-secondary) !important;
+    border: 1px solid var(--patient-card-border) !important;
+}
+
+.patient-portal .el-input__wrapper.is-focus {
+    border-color: var(--patient-primary) !important;
+    box-shadow: 0 0 0 2px var(--patient-primary-light) !important;
+}
+
+/* 患者门户表格样式 */
+.patient-portal .el-table {
+    --el-table-bg-color: transparent !important;
+    --el-table-tr-bg-color: transparent !important;
+    --el-table-header-bg-color: var(--patient-bg-tertiary) !important;
+    --el-table-row-hover-bg-color: var(--patient-primary-light) !important;
+    --el-table-border-color: var(--patient-card-border) !important;
+    --el-table-text-color: var(--patient-text-secondary) !important;
+    --el-table-header-text-color: var(--patient-text-primary) !important;
+}
+
+/* 患者门户标签样式 */
+.patient-portal .el-tag--success {
+    background: var(--patient-primary-light) !important;
+    border-color: transparent !important;
+    color: var(--patient-primary) !important;
+}
+
+/* 患者门户对话框样式 */
+.patient-portal .el-dialog {
+    background: var(--patient-card-bg) !important;
+    border: 1px solid var(--patient-card-border) !important;
+    border-radius: var(--patient-radius-xl) !important;
+}
+
+/* 患者门户导航栏 - B端清爽风格 */
+.patient-portal .portal-header {
+    background: var(--patient-glass-bg) !important;
+    backdrop-filter: var(--patient-glass-blur) !important;
+    border-bottom: 1px solid var(--patient-glass-border) !important;
+    box-shadow: 0 2px 16px rgba(var(--patient-primary-rgb), 0.06) !important;
+}
+
+/* 深色模式下导航栏使用深灰背景+蓝色底线 */
+.patient-portal[data-theme="dark"] .portal-header,
+:root[data-theme="dark"] .patient-portal .portal-header {
+    background: rgba(30, 41, 59, 0.7) !important;
+    backdrop-filter: none !important;
+    border-bottom: 1px solid rgba(96, 165, 250, 0.2) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 患者门户底部状态栏 - B端清爽风格 */
+.patient-portal .portal-footer {
+    background: var(--patient-glass-bg) !important;
+    backdrop-filter: var(--patient-glass-blur) !important;
+    border-top: 1px solid var(--patient-glass-border) !important;
+    color: var(--patient-text-muted) !important;
+}
+
+/* ============================================
+   B端后台风格增强样式
+   ============================================ */
+
+/* 清爽卡片悬停效果 */
+.patient-portal .terminal-card,
+.patient-portal .feature-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.patient-portal .terminal-card:hover,
+.patient-portal .feature-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 8px 32px rgba(var(--patient-primary-rgb), 0.12) !important;
+}
+
+/* 统计卡片样式 */
+.patient-portal .stat-card {
+    background: var(--patient-card-bg) !important;
+    border: 1px solid var(--patient-glass-border) !important;
+    border-radius: var(--patient-radius-xl) !important;
+    box-shadow: var(--patient-card-shadow) !important;
+}
+
+.patient-portal .stat-card:hover {
+    box-shadow: var(--patient-card-shadow-hover) !important;
+    border-color: var(--patient-card-border-hover) !important;
+}
+
+/* 功能入口图标样式 */
+.patient-portal .icon-wrapper,
+.patient-portal .terminal-icon {
+    border-radius: var(--patient-radius-lg) !important;
+    box-shadow: 0 4px 12px rgba(var(--patient-primary-rgb), 0.2) !important;
+}
+
+/* 标签样式 - B端清爽圆角 */
+.patient-portal .el-tag {
+    border-radius: var(--patient-radius-full) !important;
+    font-weight: 500 !important;
+    padding: 4px 12px !important;
+    border: none !important;
+}
+
+/* 按钮样式 - B端清爽风格 */
+.patient-portal .el-button--primary {
+    background: var(--patient-primary) !important;
+    border-color: var(--patient-primary) !important;
+    border-radius: var(--patient-radius-md) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(var(--patient-primary-rgb), 0.2) !important;
+}
+
+.patient-portal .el-button--primary:hover {
+    background: var(--patient-primary-dark) !important;
+    border-color: var(--patient-primary-dark) !important;
+    box-shadow: 0 4px 12px rgba(var(--patient-primary-rgb), 0.3) !important;
+}
+
+/* 次要按钮样式 */
+.patient-portal .el-button--default {
+    background: var(--patient-card-bg) !important;
+    border-color: var(--patient-card-border) !important;
+    color: var(--patient-text-secondary) !important;
+    border-radius: var(--patient-radius-md) !important;
+    font-weight: 500 !important;
+}
+
+.patient-portal .el-button--default:hover {
+    border-color: var(--patient-primary) !important;
+    color: var(--patient-primary) !important;
+    background: var(--patient-primary-light) !important;
+}
+
+/* 文本按钮样式 */
+.patient-portal .el-button--text {
+    color: var(--patient-text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+.patient-portal .el-button--text:hover {
+    color: var(--patient-primary) !important;
+    background: var(--patient-primary-light) !important;
+}
+
+/* 对话框头部和底部边框 */
+.patient-portal .el-dialog__header {
+    border-bottom: 1px solid var(--patient-glass-border) !important;
+    padding: 20px 24px !important;
+}
+
+.patient-portal .el-dialog__footer {
+    border-top: 1px solid var(--patient-glass-border) !important;
+    padding: 16px 24px !important;
+}
+
+/* 表格行悬停效果 */
+.patient-portal .el-table__row:hover>td {
+    background: var(--patient-primary-lighter) !important;
+}
+
+/* 分页器样式 */
+.patient-portal .el-pagination {
+    --el-pagination-button-bg-color: var(--patient-card-bg) !important;
+}
+
+.patient-portal .el-pager li {
+    border-radius: var(--patient-radius-sm) !important;
+    background: var(--patient-card-bg) !important;
+    border: 1px solid var(--patient-card-border) !important;
+}
+
+.patient-portal .el-pager li.is-active {
+    background: var(--patient-primary) !important;
+    border-color: var(--patient-primary) !important;
+    color: #fff !important;
+}
+
+/* 输入框聚焦效果增强 */
+.patient-portal .el-input__wrapper.is-focus {
+    border-color: var(--patient-primary) !important;
+    box-shadow: 0 0 0 3px var(--patient-primary-light) !important;
+}
+
+/* 选择器下拉菜单 */
+.patient-portal .el-select-dropdown {
+    border-radius: var(--patient-radius-md) !important;
+    border: 1px solid var(--patient-glass-border) !important;
+    box-shadow: var(--patient-card-shadow-hover) !important;
+}
+
+/* 消息提示框 */
+.patient-portal .el-message {
+    border-radius: var(--patient-radius-md) !important;
+    border: 1px solid var(--patient-glass-border) !important;
+    box-shadow: var(--patient-card-shadow) !important;
+}
+
+/* 空状态样式 */
+.patient-portal .el-empty {
+    padding: 48px 0 !important;
+}
+
+.patient-portal .el-empty__description p {
+    color: var(--patient-text-secondary) !important;
+    font-size: 14px !important;
+}
+
+/* 分割线样式 */
+.patient-portal .el-divider {
+    border-color: var(--patient-glass-border) !important;
+    margin: 24px 0 !important;
+}
+
+/* 描述列表样式 */
+.patient-portal .el-descriptions__label {
+    background: var(--patient-bg-tertiary) !important;
+    color: var(--patient-text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+.patient-portal .el-descriptions__content {
+    color: var(--patient-text-primary) !important;
+    font-weight: 500 !important;
+}
+
+/* 进度条样式 */
+.patient-portal .el-progress-bar__outer {
+    background: var(--patient-bg-tertiary) !important;
+    border-radius: 6px !important;
+}
+
+.patient-portal .el-progress-bar__inner {
+    border-radius: 6px !important;
+    background: var(--patient-gradient-medical) !important;
+}
+
+/* 单选/复选框增强 */
+.patient-portal .el-radio__input.is-checked .el-radio__inner {
+    background: var(--patient-primary) !important;
+    border-color: var(--patient-primary) !important;
+}
+
+.patient-portal .el-checkbox__input.is-checked .el-checkbox__inner {
+    background: var(--patient-primary) !important;
+    border-color: var(--patient-primary) !important;
+}
+
+/* 开关样式 */
+.patient-portal .el-switch.is-checked .el-switch__core {
+    background: var(--patient-primary) !important;
+    border-color: var(--patient-primary) !important;
+}
+
+/* Tabs标签页 */
+.patient-portal .el-tabs__item {
+    color: var(--patient-text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+.patient-portal .el-tabs__item.is-active {
+    color: var(--patient-primary) !important;
+    font-weight: 600 !important;
+}
+
+.patient-portal .el-tabs__active-bar {
+    background: var(--patient-primary) !important;
+    height: 3px !important;
+    border-radius: 2px !important;
+}
+
+/* 面包屑导航 */
+.patient-portal .el-breadcrumb__inner {
+    color: var(--patient-text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+.patient-portal .el-breadcrumb__inner.is-link:hover {
+    color: var(--patient-primary) !important;
+}
+
+/* 链接样式 */
+.patient-portal .el-link--primary {
+    color: var(--patient-primary) !important;
+    font-weight: 500 !important;
+}
+
+.patient-portal .el-link--primary:hover {
+    color: var(--patient-primary-dark) !important;
+}
+
+/* 上传区域 */
+.patient-portal .el-upload-dragger {
+    background: var(--patient-card-bg) !important;
+    border: 2px dashed var(--patient-card-border) !important;
+    border-radius: var(--patient-radius-lg) !important;
+    transition: all 0.3s ease !important;
+}
+
+.patient-portal .el-upload-dragger:hover {
+    border-color: var(--patient-primary) !important;
+    background: var(--patient-primary-lighter) !important;
+}
+
+/* 加载遮罩 */
+.patient-portal .el-loading-mask {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* ============================================
+   深色模式特定优化
+   ============================================ */
+
+/* 深色模式下卡片背景调整 */
+:root[data-theme="dark"] .patient-portal .terminal-card,
+.patient-portal[data-theme="dark"] .terminal-card {
+    background: var(--patient-card-bg) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+/* 深色模式下图标渐变 */
+:root[data-theme="dark"] .patient-portal .terminal-icon,
+.patient-portal[data-theme="dark"] .terminal-icon {
+    background: linear-gradient(135deg, #60A5FA, #22D3EE) !important;
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3) !important;
+}
+
+/* 深色模式下徽章样式 */
+:root[data-theme="dark"] .patient-portal .terminal-badge,
+.patient-portal[data-theme="dark"] .terminal-badge {
+    background: linear-gradient(135deg, #60A5FA, #22D3EE) !important;
+    box-shadow: 0 2px 8px rgba(96, 165, 250, 0.35) !important;
+}
+
+/* 深色模式下标签背景 */
+:root[data-theme="dark"] .patient-portal .medical-tag,
+.patient-portal[data-theme="dark"] .medical-tag {
+    background: var(--patient-bg-tertiary) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+/* 深色模式下统计项 */
+:root[data-theme="dark"] .patient-portal .stat-item,
+.patient-portal[data-theme="dark"] .stat-item {
+    background: var(--patient-bg-tertiary) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+/* 深色模式下用户信息 */
+:root[data-theme="dark"] .patient-portal .user-info,
+.patient-portal[data-theme="dark"] .user-info {
+    background: var(--patient-bg-tertiary) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+/* 深色模式下按钮背景 */
+:root[data-theme="dark"] .patient-portal .back-home-bar .el-button,
+.patient-portal[data-theme="dark"] .back-home-bar .el-button {
+    background: var(--patient-card-bg) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+/* 深色模式下对话框 */
+:root[data-theme="dark"] .patient-portal .el-dialog,
+.patient-portal[data-theme="dark"] .el-dialog {
+    background: var(--patient-card-bg) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+/* 深色模式下输入框 */
+:root[data-theme="dark"] .patient-portal .el-input__wrapper,
+.patient-portal[data-theme="dark"] .el-input__wrapper {
+    background: var(--patient-bg-secondary) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+/* 深色模式下表格行悬停 */
+:root[data-theme="dark"] .patient-portal .el-table__row:hover>td,
+.patient-portal[data-theme="dark"] .el-table__row:hover>td {
+    background: var(--patient-primary-light) !important;
+}
+
+/* 深色模式下上传区域 */
+:root[data-theme="dark"] .patient-portal .el-upload-dragger,
+.patient-portal[data-theme="dark"] .el-upload-dragger {
+    background: var(--patient-card-bg) !important;
+    border-color: var(--patient-card-border) !important;
+}
+
+:root[data-theme="dark"] .patient-portal .el-upload-dragger:hover,
+.patient-portal[data-theme="dark"] .el-upload-dragger:hover {
+    background: var(--patient-primary-light) !important;
+    border-color: var(--patient-primary) !important;
+}
+
+/* 深色模式下加载遮罩 */
+:root[data-theme="dark"] .patient-portal .el-loading-mask,
+.patient-portal[data-theme="dark"] .el-loading-mask {
+    background: rgba(15, 23, 42, 0.9) !important;
+}

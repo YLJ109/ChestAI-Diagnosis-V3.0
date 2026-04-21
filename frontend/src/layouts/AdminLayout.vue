@@ -47,7 +47,7 @@
         </router-link>
 
         <div class="nav-divider"></div>
-        <router-link to="/dashboard" class="nav-item">
+        <router-link to="/staff/dashboard" class="nav-item">
           <div class="nav-icon"><el-icon :size="18">
               <Back />
             </el-icon></div>
@@ -169,7 +169,7 @@ function handleThemeChange(val: boolean | string | number) { authStore.setTheme(
 }
 
 .logo-text {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--sidebar-text-active);
 }
@@ -240,7 +240,7 @@ function handleThemeChange(val: boolean | string | number) { authStore.setTheme(
 }
 
 .nav-label {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -274,7 +274,7 @@ function handleThemeChange(val: boolean | string | number) { authStore.setTheme(
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
 }
 

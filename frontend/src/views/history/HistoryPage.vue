@@ -154,7 +154,7 @@
             <div class="img-box">
               <div class="img-label">原始胸部X光片</div>
               <div class="img-wrapper">
-<el-image :src="imgUrl(currentRecord.image_path)" fit="contain" lazy
+                <el-image :src="imgUrl(currentRecord.image_path)" fit="contain" lazy
                   :preview-src-list="currentRecord.image_path ? [imgUrl(currentRecord.image_path)] : []">
                   <template #error>
                     <div class="img-error"><el-icon>
@@ -167,7 +167,7 @@
             <div class="img-box" v-if="currentRecord.heatmap_path">
               <div class="img-label">Grad-CAM 热力图</div>
               <div class="img-wrapper">
-<el-image :src="imgUrl(currentRecord.heatmap_path)" fit="contain" lazy
+                <el-image :src="imgUrl(currentRecord.heatmap_path)" fit="contain" lazy
                   :preview-src-list="[imgUrl(currentRecord.heatmap_path)]">
                   <template #error>
                     <div class="img-error"><el-icon>
@@ -207,7 +207,7 @@
                   </div>
                 </div>
                 <span class="prob-val" :style="{ color: probColor(p.disease_code) }">{{ (p.probability * 100).toFixed(1)
-                  }}%</span>
+                }}%</span>
               </div>
             </div>
 
@@ -564,7 +564,7 @@ async function printRecord(r: any) {
   .col-res{display:flex;flex-direction:column;gap:8px}
   .pat-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px}
   .pat-info .pat-header{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
-  .pat-info .pat-name{font-size:16px;font-weight:700;color:#0f172a}
+  .pat-info .pat-name{font-size:17px;font-weight:700;color:#0f172a}
   .pat-info .pat-ga{font-size:11px;color:#64748b}
   .pat-info .pat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:10px}
   .pat-info .pi-row{display:flex;justify-content:space-between}
@@ -897,14 +897,14 @@ onMounted(() => fetchData())
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 700;
       color: var(--primary);
       flex-shrink: 0;
     }
 
     .strip-name {
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 700;
       color: var(--text-primary);
     }

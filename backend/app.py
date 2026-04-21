@@ -21,7 +21,7 @@ def create_app():
 
     # 初始化扩展
     db.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    cors.init_app(app, resources={r"/*": {"origins": "*"}})
     socketio.init_app(app)
     limiter.init_app(app)
 
