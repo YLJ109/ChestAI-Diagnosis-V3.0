@@ -25,3 +25,7 @@ gevent>=24.0.0
 # GPU版: pip install onnxruntime-gpu
 # CPU版: pip install onnxruntime
 onnxruntime>=1.18.0
+
+# QR Code 生成与解析
+qrcode>=7.4.2
+pillow>=10.0.0

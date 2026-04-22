@@ -50,9 +50,12 @@
         <el-table-column prop="medical_history" label="既往病史" min-width="160" show-overflow-tooltip />
         <el-table-column prop="allergy_history" label="过敏史" min-width="120" show-overflow-tooltip />
         <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" class="action-link" @click="openDialog('edit', row)">编辑</el-button>
+            <el-button type="success" link size="small" class="action-link" @click="openQrcodeDialog(row)">
+              <el-icon><Ticket /></el-icon> 二维码
+            </el-button>
             <el-popconfirm title="确定删除此患者？" @confirm="handleDelete(row)">
               <template #reference>
                 <el-button type="danger" link size="small" class="action-link">删除</el-button>
@@ -111,14 +114,18 @@
         <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 患者二维码对话框 -->
+    <PatientQrcodeDialog v-model="qrcodeDialogVisible" :patient-id="currentPatientId" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, Plus } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Ticket } from '@element-plus/icons-vue'
 import { getPatientsApi, createPatientApi, updatePatientApi, deletePatientApi } from '@/api/patients'
+import PatientQrcodeDialog from '@/components/PatientQrcodeDialog.vue'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -127,6 +134,10 @@ const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const editId = ref<number | null>(null)
 const formRef = ref<any>(null)
+
+// 二维码对话框
+const qrcodeDialogVisible = ref(false)
+const currentPatientId = ref<number | null>(null)
 
 const filters = reactive({ keyword: '', gender: '' })
 const pagination = reactive({ page: 1, per_page: 20, total: 0 })
@@ -205,6 +216,11 @@ async function handleDelete(row: any) {
     ElMessage.success('删除成功')
     fetchData()
   } catch { /* handled */ }
+}
+
+function openQrcodeDialog(row: any) {
+  currentPatientId.value = row.id
+  qrcodeDialogVisible.value = true
 }
 
 onMounted(() => fetchData())

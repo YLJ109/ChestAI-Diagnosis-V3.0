@@ -24,3 +24,9 @@ export const getProfileApi = () =>
 
 export const updateProfileApi = (data: any) =>
   http.put('/auth/profile', data)
+
+export const getPatientQrcodeApi = (patientId: number) =>
+  http.get(`/auth/patient-qrcode/${patientId}`)
+
+export const patientQrcodeLoginApi = (patientNo: string) =>
+  http.post('/auth/patient-login', { patient_no: patientNo, login_method: 'qrcode' })

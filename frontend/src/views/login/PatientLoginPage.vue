@@ -72,25 +72,76 @@
           <!-- 扫码面板 -->
           <div class="panel" :class="{ active: activeMethod === 'qrcode' }">
             <div class="scanner-area">
-              <div class="scanner-frame">
-                <div class="corner corner-tl"></div>
-                <div class="corner corner-tr"></div>
-                <div class="corner corner-bl"></div>
-                <div class="corner corner-br"></div>
-                <div class="scan-line"></div>
-                <div class="scanner-center">
-                  <el-icon :size="56" color="#22d3ee">
-                    <FullScreen />
-                  </el-icon>
-                  <p>将二维码放入扫描框内</p>
-                  <p class="scanner-hint-sm">支持就诊卡、电子健康卡二维码</p>
+              <!-- 未开启摄像头时 -->
+              <div v-if="!scannerActive" class="scanner-placeholder">
+                <div class="scanner-frame">
+                  <div class="corner corner-tl"></div>
+                  <div class="corner corner-tr"></div>
+                  <div class="corner corner-bl"></div>
+                  <div class="corner corner-br"></div>
+                  <div class="scanner-center">
+                    <el-icon :size="56" color="#22d3ee">
+                      <Camera />
+                    </el-icon>
+                    <p>点击下方按钮开启摄像头</p>
+                    <p class="scanner-hint-sm">支持患者专属二维码扫码登录</p>
+                  </div>
+                </div>
+                <div class="action-row" style="margin-top: 24px;">
+                  <el-button type="primary" size="large" class="action-btn" @click="startScanner"
+                    :loading="startingScanner">
+                    <el-icon>
+                      <VideoCamera />
+                    </el-icon>
+                    开启摄像头
+                  </el-button>
                 </div>
               </div>
-            </div>
-            <div class="action-row">
-              <el-button type="primary" size="large" class="action-btn" @click="handleQrLogin">
-                开始扫码
-              </el-button>
+
+              <!-- 摄像头开启后 -->
+              <div v-else class="scanner-active">
+                <div class="qr-reader-wrapper" :class="{ 'scan-success': scanSuccess }">
+                  <div id="qr-reader" class="qr-reader"></div>
+
+                  <!-- 扫描线动画 -->
+                  <div v-if="!scanSuccess" class="scan-line"></div>
+
+                  <!-- 扫描角标 -->
+                  <div v-if="!scanSuccess" class="scan-corners">
+                    <div class="corner-scan corner-tl"></div>
+                    <div class="corner-scan corner-tr"></div>
+                    <div class="corner-scan corner-bl"></div>
+                    <div class="corner-scan corner-br"></div>
+                  </div>
+
+                  <!-- 成功提示覆盖层 -->
+                  <div v-if="scanSuccess" class="success-overlay">
+                    <div class="success-content">
+                      <el-icon :size="48" color="#10b981">
+                        <CircleCheckFilled />
+                      </el-icon>
+                      <p class="success-text">扫描成功</p>
+                      <p class="success-subtext">正在登录...</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="scanner-tips" :class="{ 'success-tip': scanSuccess }">
+                  <el-icon v-if="!scanSuccess">
+                    <InfoFilled />
+                  </el-icon>
+                  <el-icon v-else :size="20" color="#10b981">
+                    <CircleCheckFilled />
+                  </el-icon>
+                  <span>{{ scanSuccess ? '识别成功！正在登录...' : '请将患者二维码对准摄像头' }}</span>
+                </div>
+
+                <div class="action-row" style="margin-top: 16px;">
+                  <el-button type="danger" size="large" class="action-btn" @click="stopScanner" :disabled="scanSuccess">
+                    关闭摄像头
+                  </el-button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -170,10 +221,11 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Monitor, SwitchButton, Lock, FullScreen, View, Ticket,
-  Loading, VideoCamera, InfoFilled
+  Loading, VideoCamera, InfoFilled, Camera, CircleCheckFilled
 } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { Html5Qrcode } from 'html5-qrcode'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -196,8 +248,130 @@ onMounted(() => {
   clockTimer = setInterval(updateClock, 1000)
 })
 
+// ========== 扫码登录 ==========
+const scannerActive = ref(false)
+const startingScanner = ref(false)
+const scanSuccess = ref(false) // 扫描成功状态
+const scannerStopped = ref(false) // 扫描器是否已停止
+let html5QrCode: Html5Qrcode | null = null
+
+async function startScanner() {
+  startingScanner.value = true
+  try {
+    // 先切换到激活状态，让 Vue 渲染 qr-reader 元素
+    scannerActive.value = true
+    scannerStopped.value = false // 重置停止状态
+    scanSuccess.value = false // 重置成功状态
+
+    // 等待 DOM 更新完成
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    html5QrCode = new Html5Qrcode('qr-reader')
+
+    await html5QrCode.start(
+      { facingMode: 'environment' },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+      },
+      onScanSuccess,
+      onScanFailure
+    )
+
+    ElMessage.success('摄像头已开启，请对准二维码')
+  } catch (error: any) {
+    ElMessage.error('无法访问摄像头：' + (error.message || '请检查权限设置'))
+    console.error('Scanner error:', error)
+    // 如果失败，回退状态
+    scannerActive.value = false
+    scannerStopped.value = false
+  } finally {
+    startingScanner.value = false
+  }
+}
+
+async function onScanSuccess(decodedText: string) {
+  // 防止重复触发：如果已经显示成功状态，直接返回
+  if (scanSuccess.value) {
+    return
+  }
+
+  // 验证二维码格式
+  if (!decodedText.startsWith('PATIENT_QRCODE:')) {
+    ElMessage.warning('无效的二维码，请扫描患者专属二维码')
+    return
+  }
+
+  // 提取患者编号
+  const patientNo = decodedText.replace('PATIENT_QRCODE:', '')
+
+  // 立即标记成功状态，防止重复触发
+  scanSuccess.value = true
+
+  // 暂停扫描器（保持摄像头画面，但停止识别）
+  if (html5QrCode && !scannerStopped.value) {
+    try {
+      await html5QrCode.pause()
+    } catch (error) {
+      console.error('Pause scanner error:', error)
+    }
+  }
+
+  // 停顿 1 秒，让用户看到二维码画面和成功提示
+  await new Promise(resolve => setTimeout(resolve, 1000))
+
+  // 1 秒后停止摄像头
+  if (html5QrCode && !scannerStopped.value) {
+    try {
+      await html5QrCode.stop()
+      scannerStopped.value = true
+    } catch (error) {
+      console.error('Stop scanner error:', error)
+    }
+  }
+
+  // 执行登录
+  loading.value = true
+  try {
+    await authStore.patientLogin(patientNo, 'qrcode')
+    ElMessage.success('扫码登录成功')
+    router.push('/patient')
+  } catch { /* handled */ } finally {
+    loading.value = false
+    scanSuccess.value = false
+  }
+}
+
+function onScanFailure(error: any) {
+  // 静默处理
+}
+
+async function stopScanner() {
+  if (html5QrCode && scannerActive.value && !scannerStopped.value) {
+    try {
+      await html5QrCode.stop()
+      html5QrCode.clear()
+      scannerStopped.value = true
+    } catch (error) {
+      console.error('Stop scanner error:', error)
+    }
+    scannerActive.value = false
+    scanSuccess.value = false // 重置成功状态
+  }
+}
+
+function handleQrLogin() {
+  if (scannerActive.value) {
+    ElMessage.info('摄像头已在运行中')
+  } else {
+    startScanner()
+  }
+}
+
+// 组件卸载时清理
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
+  stopScanner()
 })
 
 // ========== 登录方式切换 ==========
@@ -230,11 +404,6 @@ async function handleNumberLogin() {
   } finally {
     loading.value = false
   }
-}
-
-// ========== 扫码登录 ==========
-function handleQrLogin() {
-  ElMessage.info('扫码功能开发中，请使用编号登录')
 }
 
 // ========== 刷脸登录 ==========
@@ -548,6 +717,244 @@ function goStaffLogin() {
   font-size: 12px !important;
   color: var(--text-muted) !important;
   margin-top: 4px !important;
+}
+
+.scanner-placeholder {
+  text-align: center;
+}
+
+.scanner-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.qr-reader-wrapper {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 2px solid var(--glass-border);
+  transition: all 0.4s ease;
+}
+
+.qr-reader-wrapper.scan-success {
+  border-color: #10b981;
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+}
+
+.qr-reader {
+  width: 100%;
+  height: 100%;
+}
+
+/* 扫描线动画 */
+.scan-line {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 3px;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(34, 211, 238, 0.8) 20%,
+      rgba(34, 211, 238, 1) 50%,
+      rgba(34, 211, 238, 0.8) 80%,
+      transparent 100%);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.8),
+    0 0 20px rgba(34, 211, 238, 0.4);
+  animation: scanLineMove 2s ease-in-out infinite;
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes scanLineMove {
+
+  0%,
+  100% {
+    top: 10%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  50% {
+    top: 85%;
+  }
+}
+
+/* 扫描角标 */
+.scan-corners {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.corner-scan {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: rgba(34, 211, 238, 0.8);
+  border-style: solid;
+  border-width: 0;
+  animation: cornerPulse 2s ease-in-out infinite;
+}
+
+.corner-scan.corner-tl {
+  top: 15px;
+  left: 15px;
+  border-top-width: 3px;
+  border-left-width: 3px;
+  border-top-left-radius: 8px;
+}
+
+.corner-scan.corner-tr {
+  top: 15px;
+  right: 15px;
+  border-top-width: 3px;
+  border-right-width: 3px;
+  border-top-right-radius: 8px;
+  animation-delay: 0.5s;
+}
+
+.corner-scan.corner-bl {
+  bottom: 15px;
+  left: 15px;
+  border-bottom-width: 3px;
+  border-left-width: 3px;
+  border-bottom-left-radius: 8px;
+  animation-delay: 1s;
+}
+
+.corner-scan.corner-br {
+  bottom: 15px;
+  right: 15px;
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+  border-bottom-right-radius: 8px;
+  animation-delay: 1.5s;
+}
+
+@keyframes cornerPulse {
+
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* 成功提示覆盖层 */
+.success-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(16, 185, 129, 0.15);
+  /* 绿色半透明，更轻盈 */
+  backdrop-filter: blur(1px);
+  /* 轻微模糊 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  animation: overlayFadeIn 0.3s ease;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.success-content {
+  text-align: center;
+  animation: contentPopIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes contentPopIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-text {
+  margin: 12px 0 4px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #10b981;
+  letter-spacing: 2px;
+}
+
+.success-subtext {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.scanner-tips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(34, 211, 238, 0.06);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--primary);
+  transition: all 0.3s ease;
+
+  .el-icon {
+    flex-shrink: 0;
+  }
+}
+
+.scanner-tips.success-tip {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  animation: successPulse 0.6s ease;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .action-row {

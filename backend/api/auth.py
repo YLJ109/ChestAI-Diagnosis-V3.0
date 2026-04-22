@@ -1,6 +1,9 @@
 """认证API - 登录、注册、获取用户信息"""
+import os
+import io
+import base64
 from datetime import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 from models.user import User
@@ -8,6 +11,7 @@ from models.patient import Patient
 from models.settings import UserPreference, LoginSession
 from models.audit import AuditLog
 from utils.auth import generate_token, token_required, role_required
+import qrcode
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
@@ -69,10 +73,10 @@ def login():
 
 @auth_bp.route('/patient-login', methods=['POST'])
 def patient_login():
-    """患者登录（患者编号 + 可选验证方式）"""
+    """患者登录（患者编号 / 二维码扫码）"""
     data = request.get_json()
     patient_no = data.get('patient_no', '').strip()
-    # patient_no / qrcode / face
+    # patient_no / qrcode
     login_method = data.get('login_method', 'patient_no')
 
     if not patient_no:
@@ -111,6 +115,47 @@ def patient_login():
                 'phone': patient.phone,
             },
             'login_method': login_method,
+        }
+    })
+
+
+@auth_bp.route('/patient-qrcode/<int:patient_id>', methods=['GET'])
+@token_required
+def generate_patient_qrcode(patient_id):
+    """生成患者专属二维码（Base64图片）"""
+    patient = Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({'code': 404, 'message': '患者不存在'}), 404
+
+    # 二维码内容格式：PATIENT_QRCODE:{patient_no}
+    qrcode_content = f"PATIENT_QRCODE:{patient.patient_no}"
+
+    # 生成二维码
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qrcode_content)
+    qr.make(fit=True)
+
+    # 生成图片
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # 转换为Base64
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+
+    return jsonify({
+        'code': 200,
+        'data': {
+            'patient_id': patient.id,
+            'patient_no': patient.patient_no,
+            'patient_name': patient.name,
+            'qrcode_base64': f"data:image/png;base64,{img_str}",
+            'qrcode_content': qrcode_content,
         }
     })
 
