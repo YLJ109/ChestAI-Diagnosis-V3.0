@@ -18,3 +18,9 @@ export const changePasswordApi = (data: { old_password: string; new_password: st
 
 export const logoutApi = () =>
   http.post('/auth/logout')
+
+export const getProfileApi = () =>
+  http.get('/auth/profile')
+
+export const updateProfileApi = (data: any) =>
+  http.put('/auth/profile', data)

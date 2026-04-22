@@ -88,9 +88,6 @@
                 <el-dropdown-item command="profile"><el-icon>
                     <User />
                   </el-icon>个人信息</el-dropdown-item>
-                <el-dropdown-item command="password"><el-icon>
-                    <Lock />
-                  </el-icon>修改密码</el-dropdown-item>
                 <el-dropdown-item divided command="logout"><el-icon>
                     <SwitchButton />
                   </el-icon>退出登录</el-dropdown-item>
@@ -195,9 +192,12 @@ function handleCommand(command: string) {
     // 清除本地状态即可（JWT 体系下客户端清除 token = 已退出）
     authStore.logout()
     router.push('/login')
+  } else if (command === 'profile') {
+    // 跳转到个人信息页面（包含修改密码功能）
+    router.push('/staff/profile')
   } else if (command === 'password') {
-    passwordForm.value = { old_password: '', new_password: '' }
-    passwordDialogVisible.value = true
+    // 跳转到个人信息页面并聚焦到密码区域
+    router.push('/staff/profile')
   }
 }
 
@@ -312,7 +312,7 @@ onMounted(async () => {
   color: var(--sidebar-text);
   text-decoration: none;
   transition: all var(--transition-fast);
-  margin-bottom: 2px;
+  margin-bottom: 5px;
   position: relative;
 }
 
@@ -479,7 +479,7 @@ onMounted(async () => {
 .page-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 24px 24px 15px 24px;
   background: var(--bg-primary);
 }
 

@@ -8,19 +8,19 @@ import { onMounted } from 'vue'
 // 统一的主题管理系统
 function applyTheme(theme: 'light' | 'dark') {
   const html = document.documentElement
-  // 移除所有可能存在的主题类名
-  html.removeAttribute('class')
 
-  // 设置新的主题
+  // 同时设置类名和属性，确保两种选择器都生效
+  html.classList.remove('light', 'dark')
+  html.classList.add(theme)
   html.setAttribute('data-theme', theme)
 
-  // 存储到本地
-  localStorage.setItem('medical-theme', theme)
+  // 存储到本地（与 auth.ts 保持一致）
+  localStorage.setItem('theme', theme)
 }
 
 onMounted(() => {
   // 只在首次加载时应用保存的主题
-  const stored = localStorage.getItem('medical-theme') as 'light' | 'dark' | null
+  const stored = localStorage.getItem('theme') as 'light' | 'dark' | null
   if (stored) {
     applyTheme(stored)
   } else {

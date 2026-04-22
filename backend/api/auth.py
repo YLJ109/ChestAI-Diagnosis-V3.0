@@ -25,7 +25,8 @@ def login():
     user = User.query.filter_by(username=username).first()
     if not user or not check_password_hash(user.password_hash, password):
         # 记录失败日志
-        _log_audit(None, username, 'LOGIN_FAILED', None, None, request.remote_addr)
+        _log_audit(None, username, 'LOGIN_FAILED',
+                   None, None, request.remote_addr)
         return jsonify({'code': 401, 'message': '用户名或密码错误'}), 401
 
     if user.status != 'active':
@@ -50,7 +51,8 @@ def login():
     db.session.commit()
 
     # 记录审计日志
-    _log_audit(user.id, user.username, 'LOGIN', None, None, request.remote_addr)
+    _log_audit(user.id, user.username, 'LOGIN',
+               None, None, request.remote_addr)
 
     # 获取用户主题偏好
     pref = UserPreference.query.filter_by(user_id=user.id).first()
@@ -70,7 +72,8 @@ def patient_login():
     """患者登录（患者编号 + 可选验证方式）"""
     data = request.get_json()
     patient_no = data.get('patient_no', '').strip()
-    login_method = data.get('login_method', 'patient_no')  # patient_no / qrcode / face
+    # patient_no / qrcode / face
+    login_method = data.get('login_method', 'patient_no')
 
     if not patient_no:
         return jsonify({'code': 400, 'message': '请输入患者编号'}), 400
@@ -186,7 +189,8 @@ def change_password():
     user.password_hash = generate_password_hash(new_password)
     db.session.commit()
 
-    _log_audit(user.id, user.username, 'CHANGE_PASSWORD', 'user', user.id, request.remote_addr)
+    _log_audit(user.id, user.username, 'CHANGE_PASSWORD',
+               'user', user.id, request.remote_addr)
     return jsonify({'code': 200, 'message': '密码修改成功'})
 
 
@@ -197,6 +201,48 @@ def logout():
     _log_audit(request.current_user_id, request.current_user.username,
                'LOGOUT', None, None, request.remote_addr)
     return jsonify({'code': 200, 'message': '已登出'})
+
+
+@auth_bp.route('/profile', methods=['GET'])
+@token_required
+def get_profile():
+    """获取当前用户详细信息"""
+    user = request.current_user
+    pref = UserPreference.query.filter_by(user_id=user.id).first()
+    return jsonify({
+        'code': 200,
+        'data': {
+            **user.to_dict(),
+            'theme': pref.theme if pref else 'light',
+        }
+    })
+
+
+@auth_bp.route('/profile', methods=['PUT'])
+@token_required
+def update_profile():
+    """更新当前用户个人信息"""
+    user = request.current_user
+    data = request.get_json()
+
+    if 'real_name' in data:
+        user.real_name = data['real_name']
+    if 'email' in data:
+        user.email = data['email']
+    if 'phone' in data:
+        user.phone = data['phone']
+    if 'department' in data:
+        user.department = data['department']
+    if 'license_number' in data:
+        user.license_number = data['license_number']
+    if 'avatar_url' in data:
+        user.avatar_url = data['avatar_url']
+
+    db.session.commit()
+
+    _log_audit(user.id, user.username, 'UPDATE_PROFILE',
+               'user', user.id, request.remote_addr)
+    return jsonify({'code': 200, 'message': '个人信息更新成功', 'data': user.to_dict()})
 
 
 def _log_audit(user_id, username, action, resource_type, resource_id, ip):

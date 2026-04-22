@@ -5,8 +5,11 @@ import { loginApi, patientLoginApi, getCurrentUserApi } from '@/api/auth'
 
 function applyTheme(theme: string) {
   const html = document.documentElement
+
+  // 同时设置类名和属性，确保两种选择器都生效
   html.classList.remove('light', 'dark')
   html.classList.add(theme)
+  html.setAttribute('data-theme', theme)
 }
 
 function detectSystemTheme(): string {

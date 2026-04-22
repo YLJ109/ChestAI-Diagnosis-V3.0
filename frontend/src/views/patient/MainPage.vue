@@ -137,11 +137,11 @@ const toggleTheme = () => {
     isDarkTheme.value = !isDarkTheme.value
     const newTheme = isDarkTheme.value ? 'dark' : 'light'
 
-    // 直接设置data-theme属性
+    // 直接设置data-theme属性（与 auth.ts 保持一致）
     document.documentElement.setAttribute('data-theme', newTheme)
 
-    // 保存到localStorage
-    localStorage.setItem('medical-theme', newTheme)
+    // 保存到localStorage（统一使用 'theme' key）
+    localStorage.setItem('theme', newTheme)
 
     console.log('✅ 主题切换为:', newTheme)
 }
@@ -155,7 +155,7 @@ const handleLogout = () => {
 
 // 初始化主题
 onMounted(() => {
-    const stored = localStorage.getItem('medical-theme')
+    const stored = localStorage.getItem('theme')
     if (stored === 'dark') {
         isDarkTheme.value = true
         document.documentElement.setAttribute('data-theme', 'dark')

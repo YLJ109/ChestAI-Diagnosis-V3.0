@@ -141,48 +141,51 @@
             </div>
           </div>
 
-          <!-- 持续时间 -->
-          <div class="form-section">
-            <div class="section-title">症状持续时间</div>
-            <el-form-item prop="duration">
-              <el-radio-group v-model="form.duration" class="duration-group">
-                <el-radio value="数小时" class="duration-item"><span class="duration-label">数小时</span><span
-                    class="duration-desc">突发急症</span></el-radio>
-                <el-radio value="1-3天" class="duration-item"><span class="duration-label">1-3天</span><span
-                    class="duration-desc">急性发作</span></el-radio>
-                <el-radio value="4-7天" class="duration-item"><span class="duration-label">4-7天</span><span
-                    class="duration-desc">持续一周</span></el-radio>
-                <el-radio value="1-2周" class="duration-item"><span class="duration-label">1-2周</span><span
-                    class="duration-desc">超过一周</span></el-radio>
-                <el-radio value="2-4周" class="duration-item"><span class="duration-label">2-4周</span><span
-                    class="duration-desc">亚急性</span></el-radio>
-                <el-radio value="1-3月" class="duration-item"><span class="duration-label">1-3月</span><span
-                    class="duration-desc">慢性早期</span></el-radio>
-                <el-radio value="3月以上" class="duration-item"><span class="duration-label">3月以上</span><span
-                    class="duration-desc">长期慢性</span></el-radio>
-                <el-radio value="反复发作" class="duration-item"><span class="duration-label">反复发作</span><span
-                    class="duration-desc">间歇性</span></el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-input v-model="form.durationDetail" placeholder="补充说明：如每天发作几次、每次持续多久等" class="duration-detail-input" />
-          </div>
+          <!-- 持续时间 + 病史 + 按钮 -->
+          <div class="form-section-row">
+            <!-- 持续时间 -->
+            <div class="form-section half">
+              <div class="section-title">症状持续时间</div>
+              <el-form-item prop="duration">
+                <el-radio-group v-model="form.duration" class="duration-group">
+                  <el-radio value="数小时" class="duration-item"><span class="duration-label">数小时</span><span
+                      class="duration-desc">突发急症</span></el-radio>
+                  <el-radio value="1-3天" class="duration-item"><span class="duration-label">1-3天</span><span
+                      class="duration-desc">急性发作</span></el-radio>
+                  <el-radio value="4-7天" class="duration-item"><span class="duration-label">4-7天</span><span
+                      class="duration-desc">持续一周</span></el-radio>
+                  <el-radio value="1-2周" class="duration-item"><span class="duration-label">1-2周</span><span
+                      class="duration-desc">超过一周</span></el-radio>
+                  <el-radio value="2-4周" class="duration-item"><span class="duration-label">2-4周</span><span
+                      class="duration-desc">亚急性</span></el-radio>
+                  <el-radio value="1-3月" class="duration-item"><span class="duration-label">1-3月</span><span
+                      class="duration-desc">慢性早期</span></el-radio>
+                  <el-radio value="3月以上" class="duration-item"><span class="duration-label">3月以上</span><span
+                      class="duration-desc">长期慢性</span></el-radio>
+                  <el-radio value="反复发作" class="duration-item"><span class="duration-label">反复发作</span><span
+                      class="duration-desc">间歇性</span></el-radio>
+                </el-radio-group>
+              </el-form-item>
+              <el-input v-model="form.durationDetail" placeholder="补充说明：如每天发作几次、每次持续多久等"
+                class="duration-detail-input" />
+            </div>
 
-          <!-- 病史 -->
-          <div class="form-section">
-            <div class="section-title">既往病史</div>
-            <el-form-item prop="medical_history">
-              <el-input v-model="form.medical_history" type="textarea" :rows="3" placeholder="请描述既往病史、用药情况、过敏史等"
-                class="history-textarea" />
-            </el-form-item>
+            <!-- 病史 + 按钮 -->
+            <div class="form-section half">
+              <div class="section-title">既往病史</div>
+              <el-form-item prop="medical_history">
+                <el-input v-model="form.medical_history" type="textarea" :rows="3" placeholder="请描述既往病史、用药情况、过敏史等"
+                  class="history-textarea" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" size="large" class="submit-btn" @click="handleTriage" :loading="analyzing">
+                  <el-icon>
+                    <SetUp />
+                  </el-icon> 开始智能分诊评估
+                </el-button>
+              </el-form-item>
+            </div>
           </div>
-
-          <el-form-item>
-            <el-button type="primary" size="large" class="submit-btn" @click="handleTriage" :loading="analyzing">
-              <el-icon>
-                <SetUp />
-              </el-icon> 开始智能分诊评估
-            </el-button>
-          </el-form-item>
         </el-form>
       </div>
 
@@ -612,6 +615,27 @@ function getAdviceIcon(title: string) {
       color: var(--text-muted);
       font-weight: 400;
       margin-left: 8px;
+    }
+  }
+}
+
+// 左右布局容器
+.form-section-row {
+  display: flex;
+  gap: 20px;
+
+  .form-section.half {
+    flex: 1;
+    min-width: 0; // 允许flex收缩
+
+    &:first-child {
+      margin-top: 28px;
+      margin-bottom: 28px;
+    }
+
+    &:last-child {
+      margin-top: 28px;
+      margin-bottom: 28px;
     }
   }
 }
@@ -1117,7 +1141,7 @@ function getAdviceIcon(title: string) {
 
 .empty-card {
   height: 100%;
-  display: flex;
+  display: none; // 隐藏等待分诊评估盒子
   align-items: center;
   justify-content: center;
   min-height: 400px;

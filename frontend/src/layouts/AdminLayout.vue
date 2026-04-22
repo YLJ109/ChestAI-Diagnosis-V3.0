@@ -206,7 +206,7 @@ function handleThemeChange(val: boolean | string | number) { authStore.setTheme(
   color: var(--sidebar-text);
   text-decoration: none;
   transition: all var(--transition-fast);
-  margin-bottom: 2px;
+  margin-bottom: 5px;
   position: relative;
 }
 

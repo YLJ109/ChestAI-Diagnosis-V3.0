@@ -135,6 +135,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/batch/BatchPage.vue'),
         meta: { title: '批量诊断', icon: 'Files' },
       },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/profile/ProfilePage.vue'),
+        meta: { title: '个人信息', icon: 'User' },
+      },
     ],
   },
 

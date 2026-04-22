@@ -434,7 +434,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .revise-page {
-    padding: 24px;
+    padding: 0px;
 }
 
 .stats-row {

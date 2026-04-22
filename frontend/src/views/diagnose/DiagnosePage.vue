@@ -35,8 +35,8 @@
       </div>
     </div>
 
-    <!-- ===== 第一区：患者挂号 + 影像检查 ===== -->
-    <div class="zone-grid">
+    <!-- ===== 第一区：患者挂号 + 影像检查（有结果后隐藏）===== -->
+    <div class="zone-grid" v-if="!result">
       <!-- 左区：患者挂号 -->
       <div class="zone-card registration-zone" :class="{ active: currentStep === 1 }">
         <div class="zone-header">
@@ -159,6 +159,11 @@
         </div>
         <div class="zone-status">
           <el-tag :type="resultTagType" size="small" effect="dark">{{ resultTagLabel }}</el-tag>
+          <el-button type="danger" plain size="small" @click="handleClearResult" style="margin-left: 8px;">
+            <el-icon>
+              <Delete />
+            </el-icon> 清空
+          </el-button>
         </div>
       </div>
       <div class="zone-body">
@@ -367,19 +372,14 @@
                         <Printer />
                       </el-icon> 打印
                     </el-button>
-                    <el-button type="primary" size="small" @click="handleGenerateReport" :loading="generatingReport">
-                      <el-icon>
-                        <Refresh />
-                      </el-icon> 重新生成
-                    </el-button>
+
                   </div>
                 </div>
                 <div class="report-content-inline">
                   <pre class="report-pre">{{ reportContent }}</pre>
                 </div>
                 <div class="report-footer-inline">
-                  <div class="footer-item">本报告由AI辅助诊断系统生成，仅供临床医生参考</div>
-                  <div class="footer-item">最终诊断以临床医生意见为准</div>
+                  <div class="footer-item">本报告由AI辅助诊断系统生成，仅供临床医生参考，最终诊断以临床医生意见为准</div>
                 </div>
               </template>
             </div>
@@ -387,27 +387,11 @@
         </div>
       </div>
     </div>
-
-    <!-- 空状态（无结果时显示） -->
-    <div class="zone-card empty-zone" v-else>
-      <div class="zone-body">
-        <div class="empty-state">
-          <div class="empty-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-            </svg>
-          </div>
-          <h3>等待影像上传与AI诊断</h3>
-          <p>请先选择患者、上传胸部X光影像后开始诊断</p>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { diagnoseSingleApi } from '@/api/diagnose'
 import { getPatientsApi } from '@/api/patients'
 import { regenerateReportApi } from '@/api/reports'
@@ -596,6 +580,24 @@ async function handleGenerateReport() {
   }
 }
 
+// 清空诊断结果
+function handleClearResult() {
+  ElMessage.success('正在清空诊断结果...')
+
+  // 清除 sessionStorage 缓存
+  sessionStorage.removeItem('diagnose_state')
+
+  // 清理 blob URL
+  if (imagePreviewUrl.value && imagePreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imagePreviewUrl.value)
+  }
+
+  // 延迟刷新页面，确保提示显示
+  setTimeout(() => {
+    location.reload()
+  }, 500)
+}
+
 // 图片转Base64（确保打印时图片正常显示）
 async function imageToBase64(url: string): Promise<string> {
   try {
@@ -744,20 +746,76 @@ async function handlePrintReport() {
 }
 
 onMounted(async () => {
-  // 重置状态
-  selectedFile.value = null
-  if (imagePreviewUrl.value && imagePreviewUrl.value.startsWith('blob:')) {
-    URL.revokeObjectURL(imagePreviewUrl.value)
-  }
-  imagePreviewUrl.value = ''
-  result.value = null
-  reportContent.value = ''
-
-  // 加载患者列表
+  // 先加载患者列表（无论是否有缓存）
   try {
     const res: any = await getPatientsApi({ per_page: 200 })
     patientList.value = res.data.items
   } catch { /* handled */ }
+
+  // 尝试从 sessionStorage 恢复诊断状态
+  const savedState = sessionStorage.getItem('diagnose_state')
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState)
+      result.value = state.result || null
+      reportContent.value = state.reportContent || ''
+      selectedPatientId.value = state.selectedPatientId || undefined
+
+      // 恢复患者选择（此时 patientList 已加载）
+      if (selectedPatientId.value && patientList.value.length) {
+        const p = patientList.value.find((item: any) => item.id === selectedPatientId.value)
+        if (p) {
+          form.value.patient_id = p.id
+          form.value.symptoms = p.medical_history || ''
+        }
+      }
+
+      if (result.value) {
+        ElMessage.info('已恢复上次的诊断结果')
+      }
+    } catch {
+      // 忽略解析错误
+    }
+  }
+
+  // 如果没有保存的数据，清理状态
+  if (!result.value) {
+    selectedFile.value = null
+    if (imagePreviewUrl.value && imagePreviewUrl.value.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrl.value)
+    }
+    imagePreviewUrl.value = ''
+    reportContent.value = ''
+  }
+})
+
+// 保存诊断状态到 sessionStorage
+function saveState() {
+  if (result.value) {
+    sessionStorage.setItem('diagnose_state', JSON.stringify({
+      result: result.value,
+      reportContent: reportContent.value,
+      selectedPatientId: selectedPatientId.value,
+    }))
+  } else {
+    sessionStorage.removeItem('diagnose_state')
+  }
+}
+
+// 监听结果变化，自动保存
+watch(result, () => {
+  saveState()
+}, { deep: true })
+
+watch(reportContent, () => {
+  saveState()
+})
+
+onUnmounted(() => {
+  // 组件卸载时清理 blob URL
+  if (imagePreviewUrl.value && imagePreviewUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imagePreviewUrl.value)
+  }
 })
 </script>
 
@@ -979,7 +1037,8 @@ onMounted(async () => {
   .empty-zone,
   .result-zone,
   .report-zone {
-    margin-bottom: 20px;
+    // margin-bottom: 20px;
+    max-height: 760px;
   }
 
   // ========== 患者挂号区 ==========
@@ -1193,9 +1252,10 @@ onMounted(async () => {
   // ========== 诊断结果区 ==========
   .result-layout {
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 205px 1fr;
     gap: 16px;
-    align-items: start;
+    align-items: stretch;
+    min-height: 600px;
   }
 
   .result-left-panel {
@@ -1456,7 +1516,7 @@ onMounted(async () => {
     padding: 16px;
     display: flex;
     flex-direction: column;
-    margin-top: auto;
+    // margin-top: auto;
 
     .action-title {
       font-size: 13px;
@@ -1720,7 +1780,7 @@ onMounted(async () => {
         background: var(--bg-tertiary);
         border: 1px solid var(--glass-border);
         border-radius: var(--radius-md);
-        max-height: 400px;
+        max-height: 460px;
         overflow-y: auto;
       }
     }

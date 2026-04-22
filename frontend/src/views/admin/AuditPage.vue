@@ -42,7 +42,7 @@
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无审计日志" class="audit-table"
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无审计日志" class="glass-table"
         row-class-name="audit-row">
         <!-- 序号 -->
         <el-table-column type="index" label="#" width="50" align="center" :index="getRowIndex" />
@@ -272,7 +272,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
 
     .filter-item {
@@ -315,37 +315,82 @@ onMounted(() => {
   .stats-bar {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
-    padding: 6px 14px;
+    margin-bottom: 16px;
+    padding: 8px 16px;
     background: var(--glass-bg);
     border-radius: var(--radius-md);
     font-size: 13px;
     color: var(--text-secondary);
+    border: 1px solid var(--glass-border);
 
     b {
       color: var(--primary);
       font-weight: 600;
+      margin: 0 2px;
     }
   }
 
   // ===== 表格 =====
-  .audit-table {
+  .glass-table {
     --td-padding-y: 10px;
+
+    // 表头样式
+    :deep(th.el-table__cell) {
+      background: var(--bg-tertiary) !important;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--glass-border);
+    }
 
     :deep(th .cell) {
       font-weight: 600;
       font-size: 13px;
       color: var(--text-primary);
-      background: var(--bg-tertiary);
+    }
+
+    // 表格单元格
+    :deep(td.el-table__cell) {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--glass-border);
     }
 
     :deep(td .cell) {
       font-size: 13px;
       vertical-align: middle;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
     }
 
+    // 居中的列
+    :deep(.el-table__body tr td) {
+      .cell {
+
+        &:has(.action-tag),
+        &:has(.resource-tag),
+        &:has(.user-name),
+        &:has(.ip-text),
+        &:has(.time-text) {
+          justify-content: center;
+        }
+      }
+    }
+
+    // 行悬停效果
     .audit-row:hover>td {
-      background: rgba(var(--primary-rgb), 0.03);
+      background: rgba(var(--primary-rgb), 0.04) !important;
+      transition: background 0.2s ease;
+    }
+
+    // 空状态
+    :deep(.el-table__empty-block) {
+      min-height: 200px;
+    }
+
+    :deep(.el-table__empty-text) {
+      color: var(--text-muted);
+      font-size: 14px;
     }
   }
 
@@ -376,30 +421,32 @@ onMounted(() => {
   .action-tag {
     display: inline-flex;
     align-items: center;
-    padding: 3px 10px;
-    border-radius: 10px;
-    font-size: 11.5px;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.3px;
-    line-height: 1.6;
+    line-height: 1.5;
+    min-width: 70px;
 
     &.danger {
-      background: rgba(239, 68, 68, 0.10);
+      background: rgba(239, 68, 68, 0.12);
       color: #EF4444;
     }
 
     &.success {
-      background: rgba(34, 197, 94, 0.10);
+      background: rgba(34, 197, 94, 0.12);
       color: #22C55E;
     }
 
     &.warning {
-      background: rgba(245, 158, 11, 0.10);
+      background: rgba(245, 158, 11, 0.12);
       color: #F59E0B;
     }
 
     &.info {
-      background: rgba(59, 130, 246, 0.10);
+      background: rgba(59, 130, 246, 0.12);
       color: #3B82F6;
     }
   }
@@ -408,12 +455,14 @@ onMounted(() => {
   .resource-tag {
     display: inline-flex;
     align-items: center;
-    padding: 2px 10px;
-    border-radius: 10px;
-    font-size: 11.5px;
+    justify-content: center;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
     font-weight: 500;
-    background: rgba(139, 92, 246, 0.08);
+    background: rgba(139, 92, 246, 0.12);
     color: #8B5CF6;
+    min-width: 60px;
   }
 
   // ===== 详情列 =====
