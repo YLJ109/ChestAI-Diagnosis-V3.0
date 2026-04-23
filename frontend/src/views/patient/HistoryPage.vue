@@ -38,12 +38,6 @@
                                         <View />
                                     </el-icon>详情
                                 </el-button>
-                                <el-button type="success" link size="small" v-if="d.has_report"
-                                    @click="printFromHistory(d)">
-                                    <el-icon>
-                                        <Printer />
-                                    </el-icon>打印报告
-                                </el-button>
                             </div>
                         </div>
                     </div>
@@ -59,7 +53,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-    Clock, ArrowLeft, View, Printer
+    Clock, ArrowLeft, View
 } from '@element-plus/icons-vue'
 import { getPatientDiagnosesApi, getPatientReportDetailApi } from '@/api/patient-portal'
 
@@ -99,11 +93,6 @@ function statusTagType(s: string): 'success' | 'warning' | 'danger' | 'info' {
 function viewDiagnosisDetail(d: any) {
     // TODO: 实现查看详情功能
     ElMessage.info('查看详情功能开发中')
-}
-
-function printFromHistory(d: any) {
-    // TODO: 实现打印功能
-    ElMessage.info('打印功能开发中')
 }
 
 function getProbClass(prob: number): string {
@@ -160,6 +149,7 @@ function getProbClass(prob: number): string {
     padding: 24px 40px;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    background: linear-gradient(180deg, #F0F7FF 0%, #E8F4FD 100%);
 }
 
 /* 返回主页按钮栏 */
@@ -207,28 +197,30 @@ function getProbClass(prob: number): string {
     bottom: 0;
     width: 3px;
     background: linear-gradient(180deg,
-            var(--medical-primary) 0%,
-            var(--medical-accent) 50%,
-            var(--card-border) 100%);
+            #3B82F6 0%,
+            #2563EB 50%,
+            rgba(59, 130, 246, 0.2) 100%);
     border-radius: 2px;
 }
 
 .timeline-item {
     display: flex;
     gap: 20px;
-    padding: 20px !important;
+    padding: 24px !important;
     position: relative;
-    background: var(--card-bg);
-    border: 2px solid var(--card-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--card-shadow);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
 }
 
 .timeline-item:hover {
-    border-color: var(--medical-primary);
-    transform: translateX(4px);
-    box-shadow: var(--card-hover-shadow);
+    border-color: rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.05));
+    transform: translateX(4px) translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
 }
 
 .timeline-dot {
@@ -237,18 +229,18 @@ function getProbClass(prob: number): string {
     top: 28px;
     width: 24px;
     height: 24px;
-    border-radius: var(--radius-full);
-    background: var(--card-bg);
-    border: 3px solid var(--card-border);
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid rgba(59, 130, 246, 0.3);
     z-index: 2;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s;
 }
 
 .timeline-dot.latest {
-    background: linear-gradient(135deg, var(--medical-primary), var(--medical-accent));
-    border-color: var(--medical-primary);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2), 0 4px 12px rgba(37, 99, 235, 0.4);
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.4);
     animation: pulse 2s infinite;
 }
 
@@ -278,7 +270,7 @@ function getProbClass(prob: number): string {
 
 .timeline-date {
     font-size: 14px;
-    color: var(--text-secondary);
+    color: #6B7280;
     font-weight: 600;
     font-family: 'Courier New', monospace;
 }
@@ -286,12 +278,12 @@ function getProbClass(prob: number): string {
 .timeline-no {
     font-size: 14px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #1F2937;
     font-family: 'Courier New', monospace;
     padding: 4px 10px;
-    background: var(--bg-primary);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--card-border);
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .timeline-body {
@@ -310,25 +302,31 @@ function getProbClass(prob: number): string {
 
 .result-chip {
     padding: 6px 14px;
-    border-radius: var(--radius-full);
+    border-radius: 20px;
     font-size: 12px;
     font-weight: 700;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.4);
     color: #fff;
+    transition: all 0.2s ease;
 }
 
-/* 概率等级样式 - 支持深浅主题 */
+.result-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 概率等级样式 */
 .result-chip.prob-high {
-    background: linear-gradient(90deg, var(--medical-danger), #f97316);
+    background: linear-gradient(90deg, #EF4444, #F97316);
 }
 
 .result-chip.prob-mid {
-    background: linear-gradient(90deg, var(--medical-warning), #eab308);
+    background: linear-gradient(90deg, #F59E0B, #EAB308);
 }
 
 .result-chip.prob-low {
-    background: linear-gradient(90deg, var(--medical-success), var(--medical-accent));
+    background: linear-gradient(90deg, #10B981, #06B6D4);
 }
 
 .timeline-actions {

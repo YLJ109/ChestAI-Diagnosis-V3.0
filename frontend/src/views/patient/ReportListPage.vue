@@ -44,11 +44,6 @@
                                 <View />
                             </el-icon>查看
                         </el-button>
-                        <el-button type="success" size="small" plain @click.stop="handlePrint(r)">
-                            <el-icon>
-                                <Printer />
-                            </el-icon>打印
-                        </el-button>
                     </div>
                 </div>
             </template>
@@ -121,11 +116,6 @@
 
             <template #footer>
                 <el-button @click="reportDialogVisible = false">关闭</el-button>
-                <el-button type="primary" @click="handlePrint(currentReport?.report)">
-                    <el-icon>
-                        <Printer />
-                    </el-icon>打印报告
-                </el-button>
             </template>
         </el-dialog>
     </div>
@@ -136,7 +126,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-    Document, ArrowLeft, Calendar, Cpu, View, Printer
+    Document, ArrowLeft, Calendar, Cpu, View
 } from '@element-plus/icons-vue'
 import { getPatientReportsApi, getPatientReportDetailApi } from '@/api/patient-portal'
 
@@ -178,38 +168,6 @@ async function openReportDetail(r: any) {
     } catch (e) {
         ElMessage.error('加载报告详情失败')
     }
-}
-
-function handlePrint(r: any) {
-    if (!r) return
-    // 使用浏览器打印功能
-    const content = `
-    <html><head><title>诊断报告 - ${r.diagnosis_no || '报告'}</title>
-    <style>
-      body{font-family:'Microsoft YaHei',sans-serif;padding:40px;max-width:800px;margin:auto;color:#333}
-      h1{text-align:center;color:#1e293b;border-bottom:2px solid #22d3ee;padding-bottom:16px}
-      h2{color:#0f172a;margin-top:24px}
-      .label{color:#64748b;font-size:13px}
-      .value{color:#1e293b}
-      .row{display:flex;justify-content:space-between;margin:8px 0}
-      .section{margin:20px 0;padding:16px;background:#f8fafc;border-radius:8px}
-      pre{white-space:pre-wrap;line-height:1.8}
-    </style></head>
-    <body>
-    <h1>胸影智诊 - AI辅助诊断报告</h1>
-    <div class="row"><span class="label">诊断编号:</span><span class="value">${r.diagnosis_no || '-'}</span></div>
-    <div class="row"><span class="label">生成时间:</span><span class="value">${r.created_at || '-'}</span></div>
-    <div class="row"><span class="label">模型:</span><span class="value">${r.model_used || '-'}</span></div>
-    ${r.findings ? `<div class="section"><h2>AI影像发现</h2><pre>${r.findings}</pre></div>` : ''}
-    ${r.impression ? `<div class="section"><h2>诊断印象</h2><pre>${r.impression}</pre></div>` : ''}
-    ${r.recommendations ? `<div class="section"><h2>医疗建议</h2><pre>${r.recommendations}</pre></div>` : ''}
-    ${r.ai_generated_content ? `<div class="section"><h2>完整报告</h2><pre>${r.ai_generated_content}</pre></div>` : ''}
-    <hr/><p style="text-align:center;color:#94a3b8;font-size:12px">本报告由AI生成，仅供参考，最终诊断以执业医师审核为准</p>
-    </body></html>`
-    const win = window.open('', '_blank')
-    win!.document.write(content)
-    win!.document.close()
-    win!.print()
 }
 
 function formatReport(report: any): string {
@@ -256,6 +214,7 @@ function getProgressColor(prob: number): string {
     padding: 24px 40px;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    background: linear-gradient(180deg, #F0F7FF 0%, #E8F4FD 100%);
 }
 
 /* 返回主页按钮栏 */
@@ -328,35 +287,37 @@ function getProgressColor(prob: number): string {
     display: flex;
     align-items: center;
     gap: 20px;
-    padding: 20px !important;
+    padding: 24px !important;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: var(--card-bg);
-    border: 2px solid var(--card-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--card-shadow);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(10px);
 }
 
 .report-item:hover {
-    border-color: var(--medical-primary);
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.03), rgba(6, 182, 212, 0.03));
-    transform: translateX(4px);
-    box-shadow: var(--card-hover-shadow);
+    border-color: rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.05));
+    transform: translateX(4px) translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
 }
 
 .report-index {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--medical-primary), var(--medical-accent));
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .report-info {
@@ -372,17 +333,18 @@ function getProgressColor(prob: number): string {
 }
 
 .report-no {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #1F2937;
     font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
 }
 
 .report-meta {
     display: flex;
     gap: 20px;
     font-size: 13px;
-    color: var(--text-secondary);
+    color: #6B7280;
 }
 
 .report-meta span {
@@ -391,18 +353,22 @@ function getProgressColor(prob: number): string {
     gap: 4px;
 }
 
+.report-meta .el-icon {
+    color: #3B82F6;
+}
+
 .report-preview {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: #6B7280;
     line-height: 1.6;
     margin-top: 8px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 8px 12px;
-    background: var(--bg-primary);
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--medical-primary);
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    border-radius: 10px;
+    border-left: 3px solid #3B82F6;
 }
 
 .report-actions {
@@ -436,18 +402,19 @@ function getProgressColor(prob: number): string {
 
 .detail-section {
     margin-bottom: 20px;
-    padding: 16px;
-    background: var(--bg-primary);
-    border-radius: var(--radius-md);
-    border-left: 4px solid var(--medical-primary);
+    padding: 18px;
+    background: linear-gradient(135deg, #F9FAFB, #F3F4F6);
+    border-radius: 12px;
+    border-left: 4px solid #3B82F6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .detail-row {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
+    padding: 10px 0;
     font-size: 14px;
-    border-bottom: 1px solid var(--card-border);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .detail-row:last-child {
@@ -455,12 +422,12 @@ function getProgressColor(prob: number): string {
 }
 
 .detail-label {
-    color: var(--text-secondary);
+    color: #6B7280;
     font-weight: 600;
 }
 
 .detail-value {
-    color: var(--text-primary);
+    color: #1F2937;
     font-weight: 700;
     font-family: 'Courier New', monospace;
 }
@@ -468,7 +435,7 @@ function getProgressColor(prob: number): string {
 .section-title {
     font-size: 17px;
     font-weight: 800;
-    color: var(--text-primary);
+    color: #1F2937;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
@@ -479,35 +446,36 @@ function getProgressColor(prob: number): string {
     content: '';
     width: 4px;
     height: 20px;
-    background: linear-gradient(180deg, var(--medical-primary), var(--medical-accent));
+    background: linear-gradient(180deg, #3B82F6, #2563EB);
     border-radius: 2px;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
 
 .section-text {
     font-size: 14px;
-    color: var(--text-secondary);
+    color: #4B5563;
     line-height: 1.8;
     white-space: pre-wrap;
-    padding: 12px;
-    background: var(--card-bg);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--card-border);
+    padding: 14px;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .impression-text {
     font-size: 17px;
     font-weight: 700;
-    color: var(--text-primary);
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(6, 182, 212, 0.08));
-    border-left: 4px solid var(--medical-primary);
+    color: #1F2937;
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    border-left: 4px solid #3B82F6;
 }
 
 .rec-text {
-    color: var(--medical-success);
+    color: #059669;
     font-weight: 600;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.04));
-    border-left: 4px solid var(--medical-success);
+    background: linear-gradient(135deg, #ECFDF5, #D1FAE5);
+    border-left: 4px solid #10B981;
 }
 
 .full-report {
@@ -525,16 +493,23 @@ function getProgressColor(prob: number): string {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 10px;
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--card-border);
+    padding: 12px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.prob-bar-item:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
 .prob-name {
     width: 120px;
     font-size: 14px;
-    color: var(--text-secondary);
+    color: #4B5563;
     flex-shrink: 0;
     font-weight: 600;
 }

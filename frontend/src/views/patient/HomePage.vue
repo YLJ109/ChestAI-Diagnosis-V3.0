@@ -1,125 +1,165 @@
-/** 患者门户 - 首页（四大模块入口） */
+/** 患者门户 - 首页（医院自助终端风格 - 彩色按钮布局） */
 <template>
     <div class="home-view">
-        <!-- 模块入口 - 医疗级一体机终端风格 -->
-        <div class="medical-terminals-grid">
-            <!-- 诊断报告模块 -->
-            <div class="terminal-card report-terminal" @click="router.push('/patient/report')">
-                <div class="terminal-header">
-                    <div class="terminal-icon">
-                        <el-icon :size="36">
-                            <Document />
-                        </el-icon>
+
+
+        <!-- 功能模块区域 -->
+        <div class="modules-container">
+            <!-- 第一行：2个大按钮（已实现的核心功能） -->
+            <div class="row-large">
+                <!-- 智能分诊 -->
+                <div class="module-btn btn-large btn-pink" @click="router.push('/patient/triage')">
+                    <el-icon :size="40">
+                        <FirstAidKit />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h3 class="btn-title">智能分诊</h3>
+                        <p class="btn-subtitle">症状分析推荐科室</p>
                     </div>
-                    <div class="terminal-badge" v-if="stats.reviewed_reports > 0">{{ stats.reviewed_reports }}</div>
                 </div>
-                <div class="terminal-content">
-                    <h3 class="terminal-title">诊断报告</h3>
-                    <p class="terminal-desc">查看并打印AI辅助诊断报告及医生审核意见</p>
-                </div>
-                <div class="terminal-footer">
-                    <span class="terminal-action">查看报告</span>
-                    <div class="terminal-indicator">
-                        <div class="indicator-dot active"></div>
-                        <div class="indicator-dot"></div>
-                        <div class="indicator-dot"></div>
+
+                <!-- AI健康咨询 -->
+                <div class="module-btn btn-large btn-purple" @click="router.push('/patient/chat')">
+                    <el-icon :size="40">
+                        <ChatDotRound />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h3 class="btn-title">AI健康咨询</h3>
+                        <p class="btn-subtitle">24小时智能问答</p>
                     </div>
                 </div>
             </div>
 
-            <!-- 就诊历史模块 -->
-            <div class="terminal-card history-terminal" @click="router.push('/patient/history')">
-                <div class="terminal-header">
-                    <div class="terminal-icon">
-                        <el-icon :size="36">
-                            <Clock />
-                        </el-icon>
+            <!-- 第二行：2个中等按钮（已实现的功能） -->
+            <div class="row-medium">
+                <!-- 报告历史 -->
+                <div class="module-btn btn-medium btn-orange" @click="router.push('/patient/history')">
+                    <el-icon :size="36">
+                        <Document />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h3 class="btn-title">报告历史</h3>
+                        <p class="btn-subtitle">查看诊断记录</p>
                     </div>
-                    <div class="terminal-badge" v-if="stats.total_diagnoses > 0">{{ stats.total_diagnoses }}</div>
+                    <span v-if="stats.total_diagnoses > 0" class="badge">{{ stats.total_diagnoses }}</span>
                 </div>
-                <div class="terminal-content">
-                    <h3 class="terminal-title">就诊历史</h3>
-                    <p class="terminal-desc">查看全部检测记录、影像资料与分诊结果</p>
+
+                <!-- 打印报告 -->
+                <div class="module-btn btn-medium btn-green" @click="router.push('/patient/report')">
+                    <el-icon :size="36">
+                        <Printer />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h3 class="btn-title">打印报告</h3>
+                        <p class="btn-subtitle">获取纸质报告</p>
+                    </div>
+                    <span v-if="stats.reviewed_reports > 0" class="badge">{{ stats.reviewed_reports }}</span>
                 </div>
-                <div class="terminal-footer">
-                    <span class="terminal-action">查看记录</span>
-                    <div class="terminal-indicator">
-                        <div class="indicator-dot"></div>
-                        <div class="indicator-dot active"></div>
-                        <div class="indicator-dot"></div>
+            </div>
+
+            <!-- 第三行：4个小按钮（预留功能） -->
+            <div class="row-small">
+                <div class="module-btn btn-small btn-blue" @click="showComingSoon('预约就诊')">
+                    <el-icon :size="28">
+                        <Calendar />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">预约就诊</h4>
+                        <p class="btn-subtitle">在线预约挂号</p>
+                    </div>
+                </div>
+
+                <div class="module-btn btn-small btn-blue" @click="showComingSoon('费用查询')">
+                    <el-icon :size="28">
+                        <Money />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">费用查询</h4>
+                        <p class="btn-subtitle">查询就诊费用</p>
+                    </div>
+                </div>
+
+                <div class="module-btn btn-small btn-blue" @click="showComingSoon('用药指导')">
+                    <el-icon :size="28">
+                        <TakeawayBox />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">用药指导</h4>
+                        <p class="btn-subtitle">药品使用说明</p>
+                    </div>
+                </div>
+
+                <div class="module-btn btn-small btn-blue" @click="showComingSoon('医院导航')">
+                    <el-icon :size="28">
+                        <Location />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">医院导航</h4>
+                        <p class="btn-subtitle">院内科室导航</p>
                     </div>
                 </div>
             </div>
 
-            <!-- 智能分诊模块 -->
-            <div class="terminal-card triage-terminal" @click="router.push('/patient/triage')">
-                <div class="terminal-header">
-                    <div class="terminal-icon">
-                        <el-icon :size="36">
-                            <FirstAidKit />
-                        </el-icon>
-                    </div>
-                    <div class="urgent-indicator" v-if="latestDiagnosis?.urgent">紧急</div>
-                </div>
-                <div class="terminal-content">
-                    <h3 class="terminal-title">智能分诊</h3>
-                    <p class="terminal-desc">专业症状分析，智能评估就诊科室与优先级</p>
-                    <div class="medical-tags">
-                        <span class="medical-tag">症状评估</span>
-                        <span class="medical-tag">科室推荐</span>
-                        <span class="medical-tag">紧急程度</span>
+            <!-- 第四行：4个小按钮（预留功能） -->
+            <div class="row-small">
+                <div class="module-btn btn-small btn-blue" @click="showComingSoon('检查预约')">
+                    <el-icon :size="28">
+                        <Picture />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">检查预约</h4>
+                        <p class="btn-subtitle">预约检查项目</p>
                     </div>
                 </div>
-                <div class="terminal-footer">
-                    <span class="terminal-action">开始分诊</span>
-                    <div class="terminal-indicator">
-                        <div class="indicator-dot"></div>
-                        <div class="indicator-dot"></div>
-                        <div class="indicator-dot active"></div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- AI咨询模块 -->
-            <div class="terminal-card chat-terminal" @click="router.push('/patient/chat')">
-                <div class="terminal-header">
-                    <div class="terminal-icon">
-                        <el-icon :size="36">
-                            <ChatDotRound />
-                        </el-icon>
-                    </div>
-                    <div class="ai-status">在线</div>
-                </div>
-                <div class="terminal-content">
-                    <h3 class="terminal-title">AI健康咨询</h3>
-                    <p class="terminal-desc">人工智能医疗助手，专业解答与健康管理建议</p>
-                    <div class="medical-tags">
-                        <span class="medical-tag">24小时服务</span>
-                        <span class="medical-tag">专业解答</span>
-                        <span class="medical-tag">健康管理</span>
+                <div class="module-btn btn-small btn-blue" @click="showComingSoon('健康档案')">
+                    <el-icon :size="28">
+                        <Files />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">健康档案</h4>
+                        <p class="btn-subtitle">个人健康信息</p>
                     </div>
                 </div>
-                <div class="terminal-footer">
-                    <span class="terminal-action">开始咨询</span>
-                    <div class="terminal-indicator">
-                        <div class="indicator-dot active"></div>
-                        <div class="indicator-dot active"></div>
-                        <div class="indicator-dot active"></div>
+
+                <div class="module-btn btn-small btn-blue" @click="showComingSoon('就医指南')">
+                    <el-icon :size="28">
+                        <Reading />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">就医指南</h4>
+                        <p class="btn-subtitle">就诊流程指导</p>
+                    </div>
+                </div>
+
+                <div class="module-btn btn-small btn-red" @click="handleLogout">
+                    <el-icon :size="28">
+                        <SwitchButton />
+                    </el-icon>
+                    <div class="btn-content">
+                        <h4 class="btn-title">退出登录</h4>
+                        <p class="btn-subtitle">安全退出系统</p>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Document, Clock, FirstAidKit, ChatDotRound, InfoFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import {
+    Document, FirstAidKit, ChatDotRound, Printer,
+    Calendar, Money, TakeawayBox, Location,
+    Picture, Files, Reading, SwitchButton
+} from '@element-plus/icons-vue'
 import { getPatientDashboardApi } from '@/api/patient-portal'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 // 统计数据
 const stats = ref({
@@ -128,8 +168,17 @@ const stats = ref({
     triage_count: 0,
 })
 
-// 最新诊断
-const latestDiagnosis = ref<any>(null)
+// 显示功能即将上线提示
+const showComingSoon = (feature: string) => {
+    ElMessage.info(`${feature}功能即将上线，敬请期待！`)
+}
+
+// 退出登录
+const handleLogout = () => {
+    authStore.logout()
+    ElMessage.success('已安全退出')
+    router.push('/patient-login')
+}
 
 // 加载首页数据
 onMounted(async () => {
@@ -137,7 +186,6 @@ onMounted(async () => {
         const res = await getPatientDashboardApi()
         if (res.data) {
             stats.value = res.data.stats || res.data
-            latestDiagnosis.value = res.data.latest_diagnosis || null
         }
     } catch (e) {
         console.error('加载首页数据失败', e)
@@ -146,249 +194,330 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ===== 首页视图 - B端后台商务风格，固定布局 ===== */
+/* ===== 首页视图 - 医院自助终端风格 ===== */
 .home-view {
-    max-width: 1400px;
+    max-width: 90%;
     margin: 0 auto;
-    padding: 28px 48px 36px;
-    position: relative;
-    z-index: 1;
     height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden !important;
+    overflow: hidden;
+    padding: 20px 20px;
 }
 
-/* ===== 模块入口网格 - B端后台九宫格风格 ===== */
-.medical-terminals-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 40px;
+/* ===== 顶部欢迎横幅 ===== */
+.welcome-banner {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    border-radius: 12px;
+    padding: 16px 24px;
+    text-align: center;
+    margin-bottom: 24px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.banner-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+/* ===== 功能模块容器 ===== */
+.modules-container {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     min-height: 0;
-    align-content: center;
 }
 
-/* ===== 应用卡片 - B端后台风格，纯白底色+柔和投影 ===== */
-.terminal-card {
-    background: var(--patient-card-bg);
-    border: 1px solid var(--patient-card-border);
-    border-radius: var(--patient-radius-xl);
-    padding: 60px;
+/* 行布局 */
+.row-large,
+.row-medium,
+.row-small {
+    display: grid;
+    gap: 20px;
+    flex-shrink: 0;
+}
+
+.row-large {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.row-medium {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.row-small {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* ===== 功能按钮基础样式 ===== */
+.module-btn {
+    border-radius: 16px;
+    padding: 24px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    overflow: hidden;
     display: flex;
-    flex-direction: column;
-    box-shadow: var(--patient-card-shadow);
+    align-items: center;
+    gap: 16px;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
 }
 
-/* 顶部装饰条 */
-.terminal-card::before {
+/* 光泽效果 */
+.module-btn::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--patient-gradient-medical);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
 }
 
-.terminal-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--patient-card-shadow-hover);
-    border-color: var(--patient-primary);
-    background: var(--patient-bg-secondary);
+.module-btn:hover::before {
+    left: 100%;
 }
 
-.terminal-card:hover::before {
-    opacity: 1;
+.module-btn:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* 卡片颜色主题 - 统一使用医疗政务蓝 */
-.report-terminal,
-.history-terminal,
-.triage-terminal,
-.chat-terminal {
-    --card-accent-start: var(--patient-primary);
-    --card-accent-end: var(--patient-accent-cyan);
+.module-btn:active {
+    transform: translateY(-2px) scale(0.98);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* 卡片头部 */
-.terminal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 24px;
-}
-
-.terminal-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: var(--patient-radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    position: relative;
-    background: var(--patient-gradient-medical);
-    box-shadow: 0 4px 12px rgba(var(--patient-primary-rgb), 0.3);
-    transition: all 0.3s ease;
-}
-
-.terminal-card:hover .terminal-icon {
-    transform: scale(1.08) rotate(-5deg);
-    box-shadow: 0 6px 16px rgba(var(--patient-primary-rgb), 0.4);
-}
-
-/* 深色模式下图标背景调整 */
-[data-theme="dark"] .terminal-icon {
-    background: linear-gradient(135deg, #60A5FA, #22D3EE);
-    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
-}
-
-.terminal-badge {
-    background: var(--patient-gradient-medical);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: var(--patient-radius-full);
-    box-shadow: 0 2px 8px rgba(var(--patient-primary-rgb), 0.3);
-    transition: all 0.3s ease;
-}
-
-.terminal-card:hover .terminal-badge {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(var(--patient-primary-rgb), 0.4);
-}
-
-/* 深色模式下徽章调整 */
-[data-theme="dark"] .terminal-badge {
-    background: linear-gradient(135deg, #60A5FA, #22D3EE);
-    box-shadow: 0 2px 8px rgba(96, 165, 250, 0.35);
-}
-
-.urgent-indicator {
-    background: linear-gradient(135deg, #EF4444, #F97316);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: var(--patient-radius-full);
-    animation: pulse 2s infinite;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-}
-
-.ai-status {
-    background: linear-gradient(135deg, #10B981, #059669);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: var(--patient-radius-full);
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.7;
-    }
-}
-
-/* 卡片内容 */
-.terminal-content {
+/* 按钮内容 */
+.btn-content {
     flex: 1;
 }
 
-.terminal-title {
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--patient-text-primary);
-    margin: 0 0 10px 0;
-    letter-spacing: 0.3px;
-}
-
-.terminal-desc {
-    font-size: 13px;
-    color: var(--patient-text-secondary);
-    line-height: 1.7;
-    margin: 0 0 18px 0;
-}
-
-.medical-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.medical-tag {
-    font-size: 11px;
-    padding: 4px 12px;
-    border-radius: var(--patient-radius-full);
-    background: var(--patient-bg-tertiary);
-    color: var(--patient-text-secondary);
-    font-weight: 500;
-    border: 1px solid var(--patient-card-border);
-}
-
-/* 卡片底部 */
-.terminal-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 18px;
-    border-top: 1px solid var(--patient-card-border);
-}
-
-.terminal-action {
-    font-size: 13px;
+.btn-title {
+    font-size: 20px;
     font-weight: 600;
-    color: var(--patient-primary);
-    letter-spacing: 0.3px;
+    margin: 0 0 8px 0;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.terminal-indicator {
-    display: flex;
-    gap: 6px;
+.btn-subtitle {
+    font-size: 13px;
+    margin: 0;
+    opacity: 0.95;
+    font-weight: 400;
+    line-height: 1.4;
 }
 
-.indicator-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: var(--patient-radius-full);
-    background: var(--patient-card-border);
-    transition: all 0.3s ease;
-}
-
-.indicator-dot.active {
-    background: var(--patient-primary);
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.35);
-}
-
-/* ===== 底部提示 - 专业商务风 ===== */
-.home-footer {
+/* 徽章 */
+.badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 28px !important;
-    font-size: 12px;
-    color: var(--patient-text-secondary);
-    background: var(--patient-gradient-medical-subtle);
-    border: 1px solid rgba(59, 130, 246, 0.15);
-    border-radius: var(--patient-radius-lg);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
-    margin-top: auto;
+    justify-content: center;
+    padding: 0 8px;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: 2px solid currentColor;
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* ===== 大按钮 ===== */
+.btn-large {
+    padding: 32px 40px;
+    min-height: 240px;
+}
+
+.btn-large .el-icon {
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
     flex-shrink: 0;
-    line-height: 1.6;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+.btn-large .btn-title {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.btn-large .btn-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* 粉色 - 智能分诊 */
+.btn-pink {
+    background: linear-gradient(135deg, #EC4899, #DB2777);
+}
+
+/* 紫色 - AI咨询 */
+.btn-purple {
+    background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+}
+
+/* ===== 中等按钮 ===== */
+.btn-medium {
+    padding: 32px 40px;
+    min-height: 230px;
+}
+
+.btn-medium .el-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+.btn-medium .btn-title {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.btn-medium .btn-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* 橙色 - 报告历史 */
+.btn-orange {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+}
+
+/* 绿色 - 打印报告 */
+.btn-green {
+    background: linear-gradient(135deg, #10B981, #059669);
+}
+
+/* ===== 小按钮 ===== */
+.btn-small {
+    padding: 18px 14px;
+    min-height: 76px;
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-small .el-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-small .btn-content {
+    width: 100%;
+}
+
+.btn-small .btn-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.btn-small .btn-subtitle {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+/* 蓝色 - 预留功能 */
+.btn-blue {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+/* 红色 - 退出登录 */
+.btn-red {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+}
+
+/* ===== 响应式适配 ===== */
+@media (max-width: 1024px) {
+    .row-small {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .btn-large {
+        padding: 24px 20px;
+        min-height: 100px;
+    }
+
+    .btn-medium {
+        padding: 24px 20px;
+        min-height: 90px;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-view {
+        max-width: 95%;
+    }
+
+    .welcome-banner {
+        padding: 12px 16px;
+    }
+
+    .banner-text {
+        font-size: 20px;
+    }
+
+    .row-large,
+    .row-medium {
+        grid-template-columns: 1fr;
+    }
+
+    .row-small {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .module-btn {
+        padding: 16px;
+    }
 }
 </style>
