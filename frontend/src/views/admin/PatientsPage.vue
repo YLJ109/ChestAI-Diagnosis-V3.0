@@ -5,9 +5,11 @@
       <!-- 搜索筛选栏 -->
       <div class="filter-bar">
         <div class="filter-item">
-          <el-input v-model="filters.keyword" placeholder="姓名/编号/手机/身份证" clearable
-            @keyup.enter="search" class="filter-input">
-            <template #prefix><el-icon><Search /></el-icon></template>
+          <el-input v-model="filters.keyword" placeholder="姓名/编号/手机/身份证" clearable @keyup.enter="search"
+            class="filter-input">
+            <template #prefix><el-icon>
+                <Search />
+              </el-icon></template>
           </el-input>
         </div>
         <div class="filter-item">
@@ -18,15 +20,21 @@
         </div>
         <div class="filter-actions">
           <el-button type="primary" @click="search">
-            <el-icon><Search /></el-icon> 搜索
+            <el-icon>
+              <Search />
+            </el-icon> 搜索
           </el-button>
           <el-button @click="resetFilters">
-            <el-icon><Refresh /></el-icon> 重置
+            <el-icon>
+              <Refresh />
+            </el-icon> 重置
           </el-button>
         </div>
         <div class="filter-actions" style="margin-left: auto;">
           <el-button type="primary" @click="openDialog('create')">
-            <el-icon><Plus /></el-icon> 新增患者
+            <el-icon>
+              <Plus />
+            </el-icon> 新增患者
           </el-button>
         </div>
       </div>
@@ -50,11 +58,31 @@
         <el-table-column prop="medical_history" label="既往病史" min-width="160" show-overflow-tooltip />
         <el-table-column prop="allergy_history" label="过敏史" min-width="120" show-overflow-tooltip />
         <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="人脸状态" width="100">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" class="action-link" @click="openDialog('edit', row)">编辑</el-button>
+            <el-tag v-if="row.has_face" type="success" size="small">
+              <el-icon>
+                <CircleCheck />
+              </el-icon> 已录入
+            </el-tag>
+            <el-tag v-else type="info" size="small">未录入</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="280" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" class="action-link"
+              @click="openDialog('edit', row)">编辑</el-button>
+            <el-button :type="row.has_face ? 'warning' : 'success'" link size="small" class="action-link"
+              @click="openFaceEnrollDialog(row)">
+              <el-icon>
+                <Camera />
+              </el-icon>
+              {{ row.has_face ? '更新人脸' : '录入人脸' }}
+            </el-button>
             <el-button type="success" link size="small" class="action-link" @click="openQrcodeDialog(row)">
-              <el-icon><Ticket /></el-icon> 二维码
+              <el-icon>
+                <Ticket />
+              </el-icon> 二维码
             </el-button>
             <el-popconfirm title="确定删除此患者？" @confirm="handleDelete(row)">
               <template #reference>
@@ -68,8 +96,8 @@
       <!-- 分页 -->
       <div class="pagination-wrap">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.per_page"
-          :total="pagination.total" :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper" @size-change="fetchData" @current-change="fetchData" />
+          :total="pagination.total" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper"
+          @size-change="fetchData" @current-change="fetchData" />
       </div>
     </div>
 
@@ -117,14 +145,79 @@
 
     <!-- 患者二维码对话框 -->
     <PatientQrcodeDialog v-model="qrcodeDialogVisible" :patient-id="currentPatientId" />
+
+    <!-- 人脸录入对话框 -->
+    <el-dialog v-model="faceEnrollDialogVisible" title="录入患者人脸" width="600px" :close-on-click-modal="false">
+      <div class="face-enroll-container">
+        <!-- 患者信息 -->
+        <div class="patient-info-box">
+          <el-descriptions :column="2" size="small" border>
+            <el-descriptions-item label="患者编号">{{ currentPatient?.patient_no }}</el-descriptions-item>
+            <el-descriptions-item label="姓名">{{ currentPatient?.name }}</el-descriptions-item>
+            <el-descriptions-item label="性别">
+              {{ currentPatient?.gender === 'male' ? '男' : currentPatient?.gender === 'female' ? '女' : '未知' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="年龄">
+              {{ currentPatient?.age ? currentPatient.age + '岁' : '-' }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 上传区域 -->
+        <div class="upload-section">
+          <el-upload ref="uploadRef" class="face-uploader" drag action="#" :auto-upload="false" :show-file-list="false"
+            :on-change="handleFileChange" accept="image/jpeg,image/png,image/jpg" :limit="1">
+            <div v-if="!previewImage" class="upload-placeholder">
+              <el-icon :size="64" color="#409EFF">
+                <UploadFilled />
+              </el-icon>
+              <div class="upload-text">
+                <p class="upload-title">点击或拖拽上传患者照片</p>
+                <p class="upload-hint">支持 JPG/PNG 格式，建议正面免冠照</p>
+              </div>
+            </div>
+            <div v-else class="preview-container">
+              <img :src="previewImage" alt="预览" class="preview-image" />
+              <div class="preview-overlay">
+                <el-button type="danger" size="small" @click.stop="clearPreview">
+                  <el-icon>
+                    <Delete />
+                  </el-icon> 删除
+                </el-button>
+              </div>
+            </div>
+          </el-upload>
+        </div>
+
+        <!-- 提示信息 -->
+        <el-alert title="人脸录入要求" type="info" :closable="false" show-icon class="enroll-tips">
+          <template #default>
+            <ul>
+              <li>请使用患者近期正面免冠照片</li>
+              <li>光线充足，面部清晰无遮挡</li>
+              <li>分辨率建议 640x480 以上</li>
+              <li>文件大小不超过 5MB</li>
+            </ul>
+          </template>
+        </el-alert>
+      </div>
+
+      <template #footer>
+        <el-button @click="faceEnrollDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="faceEnrolling" :disabled="!selectedFile" @click="handleFaceEnroll">
+          {{ faceEnrolling ? '正在录入...' : '确认录入' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, Plus, Ticket } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Ticket, CircleCheck, Camera, UploadFilled, Delete } from '@element-plus/icons-vue'
 import { getPatientsApi, createPatientApi, updatePatientApi, deletePatientApi } from '@/api/patients'
+import { enrollFaceApi } from '@/api/face'
 import PatientQrcodeDialog from '@/components/PatientQrcodeDialog.vue'
 
 const loading = ref(false)
@@ -138,6 +231,14 @@ const formRef = ref<any>(null)
 // 二维码对话框
 const qrcodeDialogVisible = ref(false)
 const currentPatientId = ref<number | null>(null)
+
+// 人脸录入对话框
+const faceEnrollDialogVisible = ref(false)
+const currentPatient = ref<any>(null)
+const selectedFile = ref<File | null>(null)
+const previewImage = ref<string>('')
+const faceEnrolling = ref(false)
+const uploadRef = ref<any>(null)
 
 const filters = reactive({ keyword: '', gender: '' })
 const pagination = reactive({ page: 1, per_page: 20, total: 0 })
@@ -223,11 +324,82 @@ function openQrcodeDialog(row: any) {
   qrcodeDialogVisible.value = true
 }
 
+// ========== 人脸录入功能 ==========
+function openFaceEnrollDialog(row: any) {
+  currentPatient.value = row
+  selectedFile.value = null
+  previewImage.value = ''
+  faceEnrollDialogVisible.value = true
+}
+
+function handleFileChange(file: any) {
+  const rawFile = file.raw
+
+  // 验证文件大小（5MB）
+  if (rawFile.size > 5 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 5MB')
+    return
+  }
+
+  // 验证文件类型
+  if (!['image/jpeg', 'image/png', 'image/jpg'].includes(rawFile.type)) {
+    ElMessage.error('只支持 JPG/PNG 格式')
+    return
+  }
+
+  selectedFile.value = rawFile
+
+  // 生成预览
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    previewImage.value = e.target?.result as string
+  }
+  reader.readAsDataURL(rawFile)
+}
+
+function clearPreview() {
+  selectedFile.value = null
+  previewImage.value = ''
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
+}
+
+async function handleFaceEnroll() {
+  if (!selectedFile.value || !currentPatient.value) {
+    ElMessage.warning('请先选择照片')
+    return
+  }
+
+  // 调试信息
+  console.log('人脸录入 - 患者信息:', currentPatient.value)
+  console.log('人脸录入 - 患者编号:', currentPatient.value.patient_no)
+  console.log('人脸录入 - 文件名:', selectedFile.value.name)
+  console.log('人脸录入 - 文件大小:', selectedFile.value.size, 'bytes')
+
+  faceEnrolling.value = true
+  try {
+    await enrollFaceApi(currentPatient.value.patient_no, selectedFile.value)
+    ElMessage.success('人脸录入成功！')
+    faceEnrollDialogVisible.value = false
+
+    // 刷新列表
+    fetchData()
+  } catch (err: any) {
+    console.error('人脸录入失败:', err)
+    console.error('错误响应:', err.response?.data)
+    ElMessage.error(err.response?.data?.message || '人脸录入失败，请重试')
+  } finally {
+    faceEnrolling.value = false
+  }
+}
+
 onMounted(() => fetchData())
 </script>
 
 <style scoped lang="scss">
 .patients-page {
+
   // 筛选栏
   .filter-bar {
     display: flex;
@@ -280,8 +452,15 @@ onMounted(() => fetchData())
     font-weight: 600;
     min-width: 40px;
 
-    &.male { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
-    &.female { background: rgba(244, 114, 182, 0.15); color: #F472B6; }
+    &.male {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60A5FA;
+    }
+
+    &.female {
+      background: rgba(244, 114, 182, 0.15);
+      color: #F472B6;
+    }
   }
 
   .pagination-wrap {
@@ -320,9 +499,110 @@ onMounted(() => fetchData())
 .action-link {
   background: transparent !important;
   padding: 2px 6px !important;
+
   &:hover {
     background: transparent !important;
     opacity: 0.8;
+  }
+}
+
+/* 人脸录入对话框样式 */
+.face-enroll-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.patient-info-box {
+  :deep(.el-descriptions__label) {
+    font-weight: 600;
+  }
+}
+
+.upload-section {
+  .face-uploader {
+    width: 100%;
+
+    :deep(.el-upload-dragger) {
+      width: 100%;
+      padding: 40px 20px;
+      border: 2px dashed #dcdfe6;
+      border-radius: 8px;
+      transition: all 0.3s;
+
+      &:hover {
+        border-color: #409EFF;
+      }
+    }
+  }
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.upload-text {
+  text-align: center;
+}
+
+.upload-title {
+  font-size: 16px;
+  color: #303133;
+  margin: 8px 0 4px;
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: 13px;
+  color: #909399;
+  margin: 0;
+}
+
+.preview-container {
+  position: relative;
+  width: 100%;
+  max-height: 400px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.preview-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.preview-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+
+  .preview-container:hover & {
+    opacity: 1;
+  }
+}
+
+.enroll-tips {
+  ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+
+    li {
+      margin: 4px 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
   }
 }
 </style>

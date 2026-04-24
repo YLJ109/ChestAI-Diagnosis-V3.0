@@ -468,7 +468,7 @@ ${form.medical_history || '无'}
 请按照指定JSON格式返回分诊结果。`
 
   try {
-    const res: any = await llmApi.chat({
+    const res: any = await llmApi.patientChat({
       messages: [
         { role: 'system', content: TRIAGE_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }

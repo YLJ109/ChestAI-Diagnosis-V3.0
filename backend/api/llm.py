@@ -10,7 +10,7 @@ llm_bp = Blueprint('llm', __name__, url_prefix='/api/v1/llm')
 @llm_bp.route('/chat', methods=['POST'])
 @token_required
 def chat():
-    """直接调用LLM对话接口（非流式）
+    """直接调用LLM对话接口（非流式）- 需要登录
 
     请求体:
     {
@@ -28,6 +28,21 @@ def chat():
         "response_time": 1.23
     }
     """
+    return _handle_chat_request()
+
+
+@llm_bp.route('/public/chat', methods=['POST'])
+def public_chat():
+    """患者端公开 LLM 对话接口（不需要登录）
+
+    用于患者端的临时对话，不存储到数据库
+    请求体和返回格式与 /chat 相同
+    """
+    return _handle_chat_request()
+
+
+def _handle_chat_request():
+    """处理 LLM 聊天请求（内部函数）"""
     data = request.get_json()
     messages = data.get('messages', [])
 

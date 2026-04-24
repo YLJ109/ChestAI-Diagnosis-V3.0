@@ -8,5 +8,8 @@ from flask_limiter.util import get_remote_address
 db = SQLAlchemy()
 cors = CORS()
 socketio = SocketIO(cors_allowed_origins="*")
-limiter = Limiter(key_func=get_remote_address,
-                  default_limits=["500 per minute"])
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["500 per minute"],
+    storage_uri="memory://"  # 使用内存存储，消除警告
+)

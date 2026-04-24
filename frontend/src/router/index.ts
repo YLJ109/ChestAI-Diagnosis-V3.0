@@ -38,44 +38,62 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/login/PatientLoginPage.vue'),
     meta: { title: '患者登录', public: true },
   },
+  {
+    path: '/patient-register',
+    name: 'PatientRegister',
+    component: () => import('@/views/login/PatientRegisterPage.vue'),
+    meta: { title: '患者注册', public: true },
+  },
+  {
+    path: '/patient-login/face',
+    name: 'PatientFaceLogin',
+    component: () => import('@/views/patient/FaceLoginPage.vue'),
+    meta: { title: '人脸识别登录', public: true },
+  },
 
-  // ===== 患者门户（独立布局，与医护系统完全隔离）=====
+  // ===== 患者门户（公开访问 + 部分功能需登录）=====
   {
     path: '/patient',
     name: 'PatientPortal',
     component: () => import('@/views/patient/MainPage.vue'),
-    meta: { title: '患者门户', role: 'patient' },
+    meta: { title: '患者门户', public: true },  // ✅ 允许未登录访问
     redirect: '/patient/home',
     children: [
       {
         path: 'home',
         name: 'PatientHome',
         component: () => import('@/views/patient/HomePage.vue'),
-        meta: { title: '首页', role: 'patient' },
+        meta: { title: '首页', public: true },  // ✅ 公开
       },
       {
         path: 'report',
         name: 'PatientReport',
         component: () => import('@/views/patient/ReportListPage.vue'),
-        meta: { title: '诊断报告', role: 'patient' },
+        meta: { title: '诊断报告', requiresAuth: true },  // 🔒 需要登录
+      },
+      {
+        path: 'report/print',
+        name: 'PatientReportPrint',
+        component: () => import('@/views/patient/ReportPrintPage.vue'),
+        meta: { title: '打印报告', requiresAuth: true },  // 🔒 需要登录
       },
       {
         path: 'history',
         name: 'PatientHistory',
         component: () => import('@/views/patient/HistoryPage.vue'),
-        meta: { title: '就诊历史', role: 'patient' },
+        meta: { title: '就诊历史', requiresAuth: true },  // 🔒 需要登录
       },
       {
         path: 'triage',
         name: 'PatientTriage',
         component: () => import('@/views/patient/TriagePage.vue'),
-        meta: { title: '智能分诊', role: 'patient' },
+        meta: { title: '智能分诊', public: true },  // ✅ 公开
       },
       {
         path: 'chat',
         name: 'PatientChat',
         component: () => import('@/views/patient/ChatPage.vue'),
-        meta: { title: 'AI咨询', role: 'patient' },
+        meta: { title: 'AI咨询', public: true },  // ✅ 公开
       },
     ],
   },
@@ -218,23 +236,40 @@ router.beforeEach((to, _from, next) => {
   // ========== 公开页面 ==========
   if (to.meta.public) {
     if (token) {
-      // 已登录：根据角色跳转到对应首页，不能停留在登录页
-      if (userRole === 'patient') {
-        next('/patient/home')
-      } else {
-        next('/staff/dashboard')
+      // 已登录用户访问登录页时，才重定向到对应首页
+      const isLoginPage = to.path === '/login' || to.path === '/patient-login' || to.path === '/patient-login/face' || to.path === '/patient-register'
+      if (isLoginPage) {
+        if (userRole === 'patient') {
+          next('/patient/home')
+        } else {
+          next('/staff/dashboard')
+        }
+        return
       }
-      return
     }
+    // 其他公开页面（如 /patient/home, /patient/triage 等），直接放行
     next()
     return
   }
 
   // ========== 未登录 ==========
   if (!token) {
-    // 如果访问的是患者门户，跳转到患者登录页
+    // ✅ 如果访问的是公开页面，允许访问
+    if (to.meta.public) {
+      next()
+      return
+    }
+
+    // 🔒 需要登录的页面，跳转到患者登录页
+    // 注意：这里我们允许用户进入 /patient/report 和 /patient/history 页面
+    // 由页面组件内部处理登录检查并显示友好提示
     if (to.path.startsWith('/patient')) {
-      next('/patient-login')
+      // 对于报告和历史页面，允许进入，由组件内部处理
+      if (to.path === '/patient/report' || to.path === '/patient/history') {
+        next()  // 允许进入，组件会显示登录提示
+      } else {
+        next('/patient-login')
+      }
     } else {
       // 否则跳转到医护登录页
       next('/login')

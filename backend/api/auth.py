@@ -108,6 +108,7 @@ def patient_login():
                 'username': f"patient_{patient.patient_no}",
                 'real_name': patient.name,
                 'role': 'patient',
+                'patient_id': patient.id,  # 添加 patient_id 用于前端显示
                 'patient_no': patient.patient_no,
                 'name': patient.name,
                 'gender': patient.gender,
@@ -182,26 +183,86 @@ def register():
 
     user = User(
         username=username,
-        password_hash=generate_password_hash(password),
+        password_hash=hash_password(password),
         real_name=real_name,
         role=role,
-        department=data.get('department'),
-        license_number=data.get('license_number'),
-        email=data.get('email'),
-        phone=data.get('phone'),
     )
     db.session.add(user)
     db.session.commit()
 
-    # 创建默认偏好
-    pref = UserPreference(user_id=user.id)
-    db.session.add(pref)
-    db.session.commit()
+    _log_audit(
+        request.current_user_id, request.current_username,
+        'USER_CREATE', 'admin', user.id, request.remote_addr
+    )
 
-    _log_audit(request.current_user_id, request.current_user.username,
-               'CREATE_USER', 'user', user.id, request.remote_addr)
+    return jsonify({
+        'code': 200,
+        'message': '用户创建成功',
+        'data': {'id': user.id, 'username': user.username}
+    })
 
-    return jsonify({'code': 200, 'data': user.to_dict()})
+
+@auth_bp.route('/patient-register', methods=['POST'])
+def patient_register():
+    """患者自助注册（无需登录）"""
+    data = request.get_json()
+
+    name = data.get('name', '').strip()
+    gender = data.get('gender', 'male')
+    age = data.get('age')
+    phone = data.get('phone', '').strip()
+    patient_no = data.get('patient_no', '').strip()
+
+    # 验证必填字段
+    if not name:
+        return jsonify({'code': 400, 'message': '姓名不能为空'}), 400
+
+    if not patient_no:
+        return jsonify({'code': 400, 'message': '患者编号不能为空'}), 400
+
+    # 检查患者编号是否已存在
+    if Patient.query.filter_by(patient_no=patient_no).first():
+        return jsonify({'code': 400, 'message': '该患者编号已被注册'}), 400
+
+    # 验证性别
+    if gender not in ['male', 'female']:
+        return jsonify({'code': 400, 'message': '性别必须为 male 或 female'}), 400
+
+    # 验证年龄
+    if age is not None and (not isinstance(age, int) or age < 0 or age > 150):
+        return jsonify({'code': 400, 'message': '年龄必须在 0-150 之间'}), 400
+
+    try:
+        # 创建患者记录
+        patient = Patient(
+            patient_no=patient_no,
+            name=name,
+            gender=gender,
+            age=age,
+            phone=phone,
+        )
+        db.session.add(patient)
+        db.session.commit()
+
+        # 记录审计日志
+        _log_audit(
+            None, f"PATIENT:{patient_no}", 'PATIENT_REGISTER',
+            'patient', patient.id, request.remote_addr
+        )
+
+        return jsonify({
+            'code': 200,
+            'message': '注册成功',
+            'data': {
+                'id': patient.id,
+                'patient_no': patient.patient_no,
+                'name': patient.name,
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"[PatientRegister] 注册失败: {e}")
+        return jsonify({'code': 500, 'message': f'注册失败: {str(e)}'}), 500
 
 
 @auth_bp.route('/me', methods=['GET'])

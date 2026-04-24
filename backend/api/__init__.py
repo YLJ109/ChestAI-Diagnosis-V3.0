@@ -15,10 +15,12 @@ from api.settings import settings_bp
 from api.dashboard import dashboard_bp
 from api.approvals import approvals_bp
 from api.patient_portal import patient_portal_bp
+from api.face_auth import face_bp  # 人脸识别
 
 all_blueprints = [
     auth_bp, users_bp, patients_bp, diagnose_bp,
     reports_bp, batch_bp, triage_bp, chat_bp,
     model_weights_bp, llm_configs_bp, llm_bp, audit_bp,
     settings_bp, dashboard_bp, approvals_bp, patient_portal_bp,
+    face_bp,  # 人脸识别
 ]

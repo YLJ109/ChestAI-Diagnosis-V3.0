@@ -24,11 +24,18 @@ class Patient(db.Model):
     allergy_history = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    # 人脸识别字段
+    face_descriptor = db.Column(
+        db.LargeBinary, nullable=True)  # BLOB 存储 512 维特征向量
+    face_image_path = db.Column(db.String(255), nullable=True)  # 人脸照片路径
 
     # 关系
     diagnoses = db.relationship('Diagnosis', backref='patient', lazy='dynamic')
-    triage_records = db.relationship('TriageRecord', backref='patient', lazy='dynamic')
+    triage_records = db.relationship(
+        'TriageRecord', backref='patient', lazy='dynamic')
 
     def to_dict(self):
         return {
@@ -50,4 +57,5 @@ class Patient(db.Model):
             'allergy_history': self.allergy_history,
             'created_by': self.created_by,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'has_face': self.face_descriptor is not None,  # 是否已录入人脸
         }

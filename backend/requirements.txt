@@ -24,7 +24,10 @@ gevent>=24.0.0
 # ONNX Runtime (GPU加速推理，比PyTorch快2-5倍)
 # GPU版: pip install onnxruntime-gpu
 # CPU版: pip install onnxruntime
-onnxruntime>=1.18.0
+onnxruntime-gpu>=1.19.0  # CUDA 13 支持需要 >= 1.19.0
+
+# 人脸识别（InsightFace - 工业级最强方案）
+insightface>=0.7.3
 
 # QR Code 生成与解析
 qrcode>=7.4.2

@@ -43,7 +43,8 @@ _transform = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225]),
 ])
 
 
@@ -130,14 +131,23 @@ def apply_heatmap(image_pil, cam, alpha=None):
     mask3 = (v >= 0.5) & (v < 0.75)
     mask4 = v >= 0.75
 
-    heatmap[mask1, 0] = 0;           heatmap[mask1, 1] = v[mask1] * 4;       heatmap[mask1, 2] = 1
-    heatmap[mask2, 0] = 0;           heatmap[mask2, 1] = 1;                   heatmap[mask2, 2] = (0.5 - v[mask2]) * 4
-    heatmap[mask3, 0] = (v[mask3] - 0.5) * 4; heatmap[mask3, 1] = 1;          heatmap[mask3, 2] = 0
-    heatmap[mask4, 0] = 1;           heatmap[mask4, 1] = (1.0 - v[mask4]) * 4; heatmap[mask4, 2] = 0
+    heatmap[mask1, 0] = 0
+    heatmap[mask1, 1] = v[mask1] * 4
+    heatmap[mask1, 2] = 1
+    heatmap[mask2, 0] = 0
+    heatmap[mask2, 1] = 1
+    heatmap[mask2, 2] = (0.5 - v[mask2]) * 4
+    heatmap[mask3, 0] = (v[mask3] - 0.5) * 4
+    heatmap[mask3, 1] = 1
+    heatmap[mask3, 2] = 0
+    heatmap[mask4, 0] = 1
+    heatmap[mask4, 1] = (1.0 - v[mask4]) * 4
+    heatmap[mask4, 2] = 0
 
     heatmap = (heatmap.clip(0, 1) * 255).astype(np.uint8)
     img_array = np.array(image_pil.convert('RGB')).astype(float)
-    overlay = (img_array * (1 - alpha) + heatmap.astype(float) * alpha).clip(0, 255).astype(np.uint8)
+    overlay = (img_array * (1 - alpha) + heatmap.astype(float)
+               * alpha).clip(0, 255).astype(np.uint8)
     return Image.fromarray(overlay)
 
 
@@ -152,7 +162,8 @@ _use_onnx = False          # 是否使用 ONNX 推理
 _lock = threading.Lock()   # 线程安全锁
 
 # 线程池：用于批量诊断时的并行图像预处理 + 推理
-_preprocess_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix='img_prep')
+_preprocess_pool = ThreadPoolExecutor(
+    max_workers=4, thread_name_prefix='img_prep')
 
 # 运行时可调参数
 _runtime_params = {
@@ -169,7 +180,8 @@ def get_runtime_params():
     """获取运行时参数"""
     _runtime_params['model_loaded'] = _onnx_session is not None or _pytorch_model is not None
     _runtime_params['device'] = str(_device) if _device else '未初始化'
-    _runtime_params['engine'] = 'onnx' if _use_onnx else ('pytorch' if _pytorch_model else '未加载')
+    _runtime_params['engine'] = 'onnx' if _use_onnx else (
+        'pytorch' if _pytorch_model else '未加载')
     return dict(_runtime_params)
 
 
@@ -204,7 +216,8 @@ def get_device():
         if torch.cuda.is_available():
             _device = torch.device('cuda')
             gpu_name = torch.cuda.get_device_name(0)
-            gpu_mem = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+            gpu_mem = torch.cuda.get_device_properties(
+                0).total_memory / (1024 ** 3)
             print(f"[AI服务] GPU: {gpu_name} ({gpu_mem:.1f}GB)")
         else:
             print("[AI服务] 警告: CUDA不可用，回退到CPU")
@@ -215,7 +228,8 @@ def get_device():
         if torch.cuda.is_available():
             _device = torch.device('cuda')
             gpu_name = torch.cuda.get_device_name(0)
-            gpu_mem = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+            gpu_mem = torch.cuda.get_device_properties(
+                0).total_memory / (1024 ** 3)
             print(f"[AI服务] 自动检测GPU: {gpu_name} ({gpu_mem:.1f}GB)")
         else:
             _device = torch.device('cpu')
@@ -252,8 +266,10 @@ def _ensure_pytorch_model(model_path):
             except Exception as e:
                 print(f"[AI服务] [Grad-CAM] CUDA 上下文初始化跳过: {e}")
 
-        _pytorch_model = CheXNet(num_classes=NUM_CLASSES, pretrained=False, dropout=0.3)
-        checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+        _pytorch_model = CheXNet(
+            num_classes=NUM_CLASSES, pretrained=False, dropout=0.3)
+        checkpoint = torch.load(
+            model_path, map_location=device, weights_only=False)
 
         state_dict = checkpoint['model_state_dict']
         has_dropout = any('classifier.1.' in k for k in state_dict.keys())
@@ -261,7 +277,8 @@ def _ensure_pytorch_model(model_path):
             new_state_dict = {}
             for k, v in state_dict.items():
                 if k.startswith('densenet.classifier.0.'):
-                    new_key = k.replace('densenet.classifier.0.', 'densenet.classifier.1.')
+                    new_key = k.replace(
+                        'densenet.classifier.0.', 'densenet.classifier.1.')
                     new_state_dict[new_key] = v
                 else:
                     new_state_dict[k] = v
@@ -297,7 +314,8 @@ def load_model(model_path=None, version_name=None):
 
     # 查找模型文件
     if model_path is None:
-        weights_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'weights')
+        weights_dir = os.path.join(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))), 'weights')
         if os.path.isdir(weights_dir):
             # 优先找 .onnx 文件
             for f in sorted(os.listdir(weights_dir)):
@@ -311,8 +329,10 @@ def load_model(model_path=None, version_name=None):
                         model_path = os.path.join(weights_dir, f)
                         break
         if not model_path or not os.path.isfile(model_path):
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            model_path = os.path.join(base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
+            base_dir = os.path.dirname(os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))))
+            model_path = os.path.join(
+                base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
 
     if not os.path.isfile(model_path):
         print(f"[AI服务] 警告: 模型文件不存在: {model_path}")
@@ -326,7 +346,8 @@ def load_model(model_path=None, version_name=None):
         try:
             _load_onnx_model(model_path, device)
             _use_onnx = True
-            _runtime_params['active_weight'] = version_name or os.path.basename(model_path)
+            _runtime_params['active_weight'] = version_name or os.path.basename(
+                model_path)
             print(f"[AI服务] ✅ ONNX 模型加载成功")
             return True
         except Exception as e:
@@ -344,14 +365,17 @@ def load_model(model_path=None, version_name=None):
                     pth_path = os.path.join(weights_dir, f)
                     break
         if pth_path == model_path:  # 还是 .onnx，说明没有 .pth
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            pth_path = os.path.join(base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
+            base_dir = os.path.dirname(os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))))
+            pth_path = os.path.join(
+                base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
         print(f"[AI服务] 使用 PyTorch 权重: {os.path.basename(pth_path)}")
 
     _use_onnx = False
     result = _load_pytorch_model_full(pth_path, device)
     if result:
-        _runtime_params['active_weight'] = version_name or os.path.basename(model_path)
+        _runtime_params['active_weight'] = version_name or os.path.basename(
+            model_path)
     return result
 
 
@@ -360,11 +384,16 @@ def _load_onnx_model(onnx_path, device):
     global _onnx_session
 
     import onnxruntime as ort
+    import logging
+
+    # 抑制 ONNX Runtime 的 CUDA 加载错误日志（会自动降级到 CPU）
+    logging.getLogger('onnxruntime').setLevel(logging.ERROR)
 
     # Session 选项：性能优化
     sess_options = ort.SessionOptions()
     sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-    sess_options.intra_op_num_threads = min(os.cpu_count(), 8)   # 内部并行线程数（提升至8）
+    sess_options.intra_op_num_threads = min(
+        os.cpu_count(), 8)   # 内部并行线程数（提升至8）
     # 以下属性部分 ONNX 版本不支持，安全设置
     if hasattr(ort, 'ExecutionMode'):
         try:
@@ -378,51 +407,26 @@ def _load_onnx_model(onnx_path, device):
     if hasattr(sess_options, 'log_level'):
         sess_options.log_level = 3  # 只显示错误
 
-    # 选择提供者（Provider）— 优先级: DirectML > CUDA > CPU
-    import platform
-    is_windows = platform.system() == 'Windows'
+    # 选择提供者（Provider）— 优先级: CUDA > CPU
     providers = ['CPUExecutionProvider']
 
     if device.type == 'cuda':
-        if is_windows:
-            # Windows: 优先尝试 DirectML（不依赖CUDA版本，通过DirectX走GPU）
-            try:
-                test_sess = ort.InferenceSession(onnx_path, sess_options=sess_options,
-                    providers=['DmlExecutionProvider', 'CPUExecutionProvider'])
-                avail = list(test_sess.get_providers())
-                if any('Dml' in str(p) for p in avail):
-                    providers = ['DmlExecutionProvider', 'CPUExecutionProvider']
-                    print(f"[AI服务] ONNX DirectML (GPU) 可用")
-                del test_sess
-            except Exception as dml_err:
-                print(f"[AI服务] ONNX DirectML 不可用: {dml_err}")
+        # 尝试 CUDA Provider
+        try:
+            test_sess = ort.InferenceSession(onnx_path, sess_options=sess_options,
+                                             providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+            avail = list(test_sess.get_providers())
+            if any('CUDA' in str(p) for p in avail):
+                providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+                print(f"[AI服务] ✅ ONNX GPU (CUDA) 可用")
+            else:
+                print(f"[AI服务] ⚠️ ONNX GPU 不可用，使用 CPU 模式")
+            del test_sess
+        except Exception as e:
+            print(f"[AI服务] ℹ️ ONNX 使用 CPU 模式")
 
-        # 如果 DirectML 不可用或非 Windows，尝试 CUDA
-        if providers == ['CPUExecutionProvider']:
-            try:
-                test_sess = ort.InferenceSession(onnx_path, sess_options=sess_options,
-                    providers=[('CUDAExecutionProvider', {
-                        'cudnn_conv_algo_search': 'ORT_TENSORRT_COMPATIBLE',
-                        'arena_extend_strategy': 'kSameAsRequested',
-                        'cudnn_algo_autotune': '1',
-                        'enable_cuda_graph': '0',
-                    }), 'CPUExecutionProvider'])
-                avail = list(test_sess.get_providers())
-                if any('CUDA' in str(p) for p in avail):
-                    providers = [('CUDAExecutionProvider', {
-                        'cudnn_conv_algo_search': 'ORT_TENSORRT_COMPATIBLE',
-                        'arena_extend_strategy': 'kSameAsRequested',
-                        'cudnn_algo_autotune': '1',
-                        'enable_cuda_graph': '0',
-                    }), 'CPUExecutionProvider']
-                    print(f"[AI服务] ONNX CUDA Provider 可用")
-                else:
-                    print(f"[AI服务] ONNX GPU Provider 不可用，使用 CPU 模式")
-                del test_sess
-            except Exception as cuda_err:
-                print(f"[AI服务] ONNX GPU 初始化失败: {cuda_err}，使用 CPU")
-
-    session = ort.InferenceSession(onnx_path, sess_options=sess_options, providers=providers)
+    session = ort.InferenceSession(
+        onnx_path, sess_options=sess_options, providers=providers)
 
     # 预热：执行一次空推理
     try:
@@ -436,8 +440,10 @@ def _load_onnx_model(onnx_path, device):
     _onnx_session = session
     provider_names = list(session.get_providers())
     print(f"[AI服务] ONNX 引擎: {' | '.join(provider_names)}")
-    print(f"[AI服务] 输入: {session.get_inputs()[0].name} {session.get_inputs()[0].shape}")
-    print(f"[AI服务] 输出: {session.get_outputs()[0].name} {session.get_outputs()[0].shape}")
+    print(
+        f"[AI服务] 输入: {session.get_inputs()[0].name} {session.get_inputs()[0].shape}")
+    print(
+        f"[AI服务] 输出: {session.get_outputs()[0].name} {session.get_outputs()[0].shape}")
 
 
 def _load_pytorch_model_full(pth_path, device):
@@ -446,7 +452,8 @@ def _load_pytorch_model_full(pth_path, device):
 
     print(f"[AI服务] 正在加载 PyTorch 模型: {pth_path}")
 
-    _pytorch_model = CheXNet(num_classes=NUM_CLASSES, pretrained=False, dropout=0.3)
+    _pytorch_model = CheXNet(num_classes=NUM_CLASSES,
+                             pretrained=False, dropout=0.3)
     checkpoint = torch.load(pth_path, map_location=device, weights_only=False)
 
     state_dict = checkpoint['model_state_dict']
@@ -455,7 +462,8 @@ def _load_pytorch_model_full(pth_path, device):
         new_state_dict = {}
         for k, v in state_dict.items():
             if k.startswith('densenet.classifier.0.'):
-                new_key = k.replace('densenet.classifier.0.', 'densenet.classifier.1.')
+                new_key = k.replace('densenet.classifier.0.',
+                                    'densenet.classifier.1.')
                 new_state_dict[new_key] = v
             else:
                 new_state_dict[k] = v
@@ -468,7 +476,8 @@ def _load_pytorch_model_full(pth_path, device):
     # Windows 上跳过 torch.compile
     if device.type == 'cuda' and hasattr(torch, 'compile') and sys.platform != 'win32':
         try:
-            _pytorch_model = torch.compile(_pytorch_model, mode='reduce-overhead')
+            _pytorch_model = torch.compile(
+                _pytorch_model, mode='reduce-overhead')
             print("[AI服务] 已启用 torch.compile")
         except Exception:
             pass
@@ -612,7 +621,8 @@ def predict_images_batch(image_paths, skip_heatmap=True):
     t0 = time.perf_counter()
 
     # 并行预处理所有图片
-    preprocess_results = list(_preprocess_pool.map(_preprocess_image, image_paths))
+    preprocess_results = list(
+        _preprocess_pool.map(_preprocess_image, image_paths))
     np_arrays = [r[0] for r in preprocess_results]
     images_pil = [r[1] for r in preprocess_results]
     np_batch = np.stack(np_arrays, axis=0)                  # (N, 3, 224, 224)
@@ -653,7 +663,8 @@ def predict_images_batch(image_paths, skip_heatmap=True):
 
     total = time.perf_counter() - t0
     if n >= 3:
-        print(f"[AI服务] 批量推理 {n}张: 预处理={t_pre:.2f}s 推理={t_inf:.2f}s 总计={total:.2f}s ({n/total:.1f}张/s)")
+        print(
+            f"[AI服务] 批量推理 {n}张: 预处理={t_pre:.2f}s 推理={t_inf:.2f}s 总计={total:.2f}s ({n/total:.1f}张/s)")
 
     return results
 
@@ -663,12 +674,14 @@ def predict_images_batch(image_paths, skip_heatmap=True):
 # ============================================================
 def _find_pth_path():
     """查找对应的 .pth 文件路径（用于 Grad-CAM 懒加载）"""
-    weights_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'weights')
+    weights_dir = os.path.join(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))), 'weights')
     if os.path.isdir(weights_dir):
         for f in os.listdir(weights_dir):
             if f.endswith(('.pth', '.pt')):
                 return os.path.join(weights_dir, f)
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    base_dir = os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))))
     return os.path.join(base_dir, 'ChestX-ray14', 'output', 'model_chestX-ray14_epochs5_81.49_v1.0.pth')
 
 

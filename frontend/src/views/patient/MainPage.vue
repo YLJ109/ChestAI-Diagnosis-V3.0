@@ -35,7 +35,8 @@
                         </el-avatar>
                         <div class="user-details">
                             <span class="user-name">{{ userInfo.name || '患者' }}</span>
-                            <span class="user-id">{{ userInfo.patient_id || 'ID: --' }}</span>
+                            <span class="user-id">{{ userInfo.patient_no ? `编号: ${userInfo.patient_no}` : 'ID: --'
+                                }}</span>
                         </div>
                     </div>
                 </div>

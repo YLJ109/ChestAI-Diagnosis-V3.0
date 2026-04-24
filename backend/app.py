@@ -1,12 +1,27 @@
 """Flask应用入口 - 胸影智诊V3.0"""
-import os
-import sys
+import warnings
+from api import all_blueprints
+from extensions import db, cors, socketio, limiter
+from config import get_config
+import logging
 from flask import Flask, send_from_directory
 from flask_cors import CORS
+import os
+import sys
 
-from config import get_config
-from extensions import db, cors, socketio, limiter
-from api import all_blueprints
+# 禁用 Python 用户站点，避免从全局目录加载包
+os.environ['PYTHONNOUSERSITE'] = '1'
+
+# 忽略 gevent 的 PyTorch 弃用警告
+warnings.filterwarnings('ignore', message='.*torch.distributed.reduce_op.*')
+
+
+# 抑制 ONNX Runtime 的所有日志（包括 CUDA 加载错误）
+logging.getLogger('onnxruntime').setLevel(logging.CRITICAL)  # 只显示致命错误
+
+# 也可以完全禁用 ONNX Runtime 日志
+# 0=Verbose, 1=Info, 2=Warning, 3=Error, 4=Fatal
+os.environ['ORT_LOGGING_LEVEL'] = '3'
 
 
 def create_app():
@@ -76,4 +91,6 @@ if __name__ == '__main__':
     print("  胸影智诊V3.0 - AI智能辅助诊断系统")
     print("  访问地址: http://localhost:5000")
     print("=" * 50)
+    # debug=True: 开发模式（代码修改自动重启）
+    # debug=False: 生产模式（只启动一次）
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

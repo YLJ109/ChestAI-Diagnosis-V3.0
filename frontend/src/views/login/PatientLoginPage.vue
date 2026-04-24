@@ -148,32 +148,7 @@
           <!-- 刷脸面板 -->
           <div class="panel" :class="{ active: activeMethod === 'face' }">
             <div class="face-area">
-              <div class="face-frame">
-                <div class="face-oval" :class="{ checking: faceChecking }">
-                  <el-icon :size="72" :color="faceChecking ? '#6366f1' : '#22d3ee'">
-                    <View />
-                  </el-icon>
-                </div>
-                <p class="face-hint">请正对摄像头，保持面部在框内</p>
-                <div class="face-status-box" :class="{ checking: faceChecking }">
-                  <template v-if="!faceChecking">
-                    <el-icon :size="16">
-                      <VideoCamera />
-                    </el-icon>
-                    <span>点击下方按钮启动人脸识别</span>
-                  </template>
-                  <template v-else>
-                    <el-icon :size="16" class="is-loading">
-                      <Loading />
-                    </el-icon>
-                    <span>正在识别中，请勿移动...</span>
-                  </template>
-                </div>
-                <el-button type="primary" size="large" class="action-btn" :loading="faceChecking"
-                  @click="startFaceScan">
-                  {{ faceChecking ? '识别中...' : '开始人脸识别' }}
-                </el-button>
-              </div>
+              <FaceLoginPage @login-success="handleFaceLoginSuccess" />
             </div>
           </div>
 
@@ -194,6 +169,12 @@
                 </el-form-item>
               </el-form>
               <p class="number-help">不知道编号？请联系前台工作人员或查看您的就诊卡</p>
+              <div class="register-link">
+                <span>还没有患者编号？</span>
+                <el-button text type="primary" @click="goToRegister">
+                  立即注册
+                </el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -226,6 +207,7 @@ import {
 import type { FormInstance } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { Html5Qrcode } from 'html5-qrcode'
+import FaceLoginPage from '@/views/patient/FaceLoginPage.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -409,17 +391,18 @@ async function handleNumberLogin() {
 // ========== 刷脸登录 ==========
 const faceChecking = ref(false)
 
-function startFaceScan() {
-  faceChecking.value = true
-  setTimeout(() => {
-    faceChecking.value = false
-    ElMessage.info('人脸识别功能开发中，请使用编号登录')
-  }, 2500)
+function handleFaceLoginSuccess(patientData: any) {
+  ElMessage.success(`欢迎，${patientData.name}！`)
+  router.push('/patient')
 }
 
 // ========== 跳转医护登录 ==========
 function goStaffLogin() {
   router.push('/login')
+}
+
+function goToRegister() {
+  router.push('/patient-register')
 }
 </script>
 
@@ -539,7 +522,8 @@ function goStaffLogin() {
 /* 右侧登录区 */
 .login-section {
   flex: 1;
-  max-width: 520px;
+  max-width: 900px;
+  /* 扩大宽度以容纳刷脸视频 */
 }
 
 .method-tabs {
@@ -966,7 +950,11 @@ function goStaffLogin() {
 .face-area {
   display: flex;
   justify-content: center;
-  margin-bottom: 8px;
+  align-items: center;
+  padding: 0;
+  /* 移除内边距，让 FaceLoginPage 自适应 */
+  min-height: auto;
+  /* 移除最小高度限制 */
 }
 
 .face-frame {
@@ -1033,6 +1021,27 @@ function goStaffLogin() {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 12px;
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+
+  span {
+    color: #94a3b8;
+  }
+
+  .el-button {
+    padding: 4px 12px;
+    font-size: 14px;
+    font-weight: 600;
+  }
 }
 
 /* ===== 底部状态栏 ===== */

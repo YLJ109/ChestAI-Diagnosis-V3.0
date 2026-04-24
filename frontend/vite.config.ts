@@ -29,13 +29,15 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        // ✅ 修改：把 localhost 换成【你的电脑局域网IP】
-        target: 'http://192.168.31.210:5000',
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
       '/static': {
-        // ✅ 修改：和上面保持一致
-        target: 'http://192.168.31.210:5000',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },

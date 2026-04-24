@@ -30,3 +30,13 @@ export const getPatientQrcodeApi = (patientId: number) =>
 
 export const patientQrcodeLoginApi = (patientNo: string) =>
   http.post('/auth/patient-login', { patient_no: patientNo, login_method: 'qrcode' })
+
+// 患者自助注册
+export const patientRegisterApi = (data: {
+  name: string
+  gender: string
+  age?: number
+  phone?: string
+  patient_no: string
+}) =>
+  http.post('/auth/patient-register', data)

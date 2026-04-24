@@ -8,7 +8,8 @@ from models.report import Report
 from models.triage import TriageRecord
 from utils.auth import token_required
 
-patient_portal_bp = Blueprint('patient_portal', __name__, url_prefix='/api/v1/patient')
+patient_portal_bp = Blueprint(
+    'patient_portal', __name__, url_prefix='/api/v1/patient')
 
 
 @patient_portal_bp.route('/dashboard', methods=['GET'])
@@ -155,6 +156,9 @@ def patient_report_detail(report_id):
     probs = DiseaseProbability.query.filter_by(diagnosis_id=report.diagnosis_id)\
         .order_by(DiseaseProbability.probability.desc()).all()
 
+    # 获取患者信息
+    patient = Patient.query.get(diagnosis.patient_id)
+
     return jsonify({
         'code': 200,
         'data': {
@@ -174,8 +178,16 @@ def patient_report_detail(report_id):
                 'id': diagnosis.id,
                 'diagnosis_no': diagnosis.diagnosis_no,
                 'image_path': diagnosis.image_path,
+                'image_url': f'/static/images/{diagnosis.image_path.split("/")[-1]}' if diagnosis.image_path else '',
                 'heatmap_path': diagnosis.heatmap_path,
+                'heatmap_url': f'/static/heatmaps/{diagnosis.heatmap_path.split("/")[-1]}' if diagnosis.heatmap_path else '',
                 'created_at': diagnosis.created_at.strftime('%Y-%m-%d %H:%M') if diagnosis.created_at else None,
+                'patient_id': diagnosis.patient_id,
+                'patient_name': patient.name if patient else '-',
+                'patient_gender': patient.gender if patient else '-',
+                'patient_age': patient.age if patient else None,
+                'patient_no': patient.patient_no if patient else '-',
+                'patient_id_display': patient.id if patient else None,  # 添加患者ID用于显示
             },
             'probabilities': [p.to_dict() for p in probs],
         }

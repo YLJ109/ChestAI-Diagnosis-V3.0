@@ -30,22 +30,26 @@
                 </div>
             </div>
 
-            <!-- 第二行：2个中等按钮（已实现的功能） -->
+            <!-- 第二行：2个中等按钮（需登录功能） -->
             <div class="row-medium">
                 <!-- 报告历史 -->
-                <div class="module-btn btn-medium btn-orange" @click="router.push('/patient/history')">
+                <div class="module-btn btn-medium btn-orange" @click="handleAuthRequired('/patient/history')">
                     <el-icon :size="36">
                         <Document />
                     </el-icon>
                     <div class="btn-content">
-                        <h3 class="btn-title">报告历史</h3>
+                        <h3 class="btn-title">患者历史</h3>
                         <p class="btn-subtitle">查看诊断记录</p>
                     </div>
                     <span v-if="stats.total_diagnoses > 0" class="badge">{{ stats.total_diagnoses }}</span>
+                    <!-- 未登录提示图标 -->
+                    <el-icon v-if="!isLoggedIn" class="lock-icon" :size="20">
+                        <Lock />
+                    </el-icon>
                 </div>
 
                 <!-- 打印报告 -->
-                <div class="module-btn btn-medium btn-green" @click="router.push('/patient/report')">
+                <div class="module-btn btn-medium btn-green" @click="handleAuthRequired('/patient/report')">
                     <el-icon :size="36">
                         <Printer />
                     </el-icon>
@@ -54,6 +58,10 @@
                         <p class="btn-subtitle">获取纸质报告</p>
                     </div>
                     <span v-if="stats.reviewed_reports > 0" class="badge">{{ stats.reviewed_reports }}</span>
+                    <!-- 未登录提示图标 -->
+                    <el-icon v-if="!isLoggedIn" class="lock-icon" :size="20">
+                        <Lock />
+                    </el-icon>
                 </div>
             </div>
 
@@ -147,11 +155,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-    Document, FirstAidKit, ChatDotRound, Printer,
+    Document, FirstAidKit, ChatDotRound, Printer, Lock,
     Calendar, Money, TakeawayBox, Location,
     Picture, Files, Reading, SwitchButton
 } from '@element-plus/icons-vue'
@@ -160,6 +168,9 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// 是否已登录
+const isLoggedIn = computed(() => !!authStore.token)
 
 // 统计数据
 const stats = ref({
@@ -173,6 +184,12 @@ const showComingSoon = (feature: string) => {
     ElMessage.info(`${feature}功能即将上线，敬请期待！`)
 }
 
+// 处理需要登录的功能
+const handleAuthRequired = (path: string) => {
+    // 直接跳转，由目标页面显示登录提示
+    router.push(path)
+}
+
 // 退出登录
 const handleLogout = () => {
     authStore.logout()
@@ -182,13 +199,21 @@ const handleLogout = () => {
 
 // 加载首页数据
 onMounted(async () => {
+    // 只有已登录用户才加载统计数据
+    if (!isLoggedIn.value) {
+        return  // 未登录时不加载，避免 401 错误
+    }
+
     try {
         const res = await getPatientDashboardApi()
         if (res.data) {
             stats.value = res.data.stats || res.data
         }
-    } catch (e) {
-        console.error('加载首页数据失败', e)
+    } catch (e: any) {
+        // 静默处理错误，不显示控制台报错
+        if (e.response?.status !== 401) {
+            console.error('加载首页数据失败', e)
+        }
     }
 })
 </script>
@@ -349,6 +374,29 @@ onMounted(async () => {
 
     50% {
         transform: scale(1.05);
+    }
+}
+
+/* 锁图标 - 未登录提示 */
+.lock-icon {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    animation: lockPulse 2s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
     }
 }
 

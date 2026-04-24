@@ -103,7 +103,8 @@ async function handleLogin() {
 }
 
 function goPatientLogin() {
-  router.push('/patient-login')
+  // 直接跳转到患者门户首页（公开访问，无需登录）
+  router.push('/patient/home')
 }
 </script>
 

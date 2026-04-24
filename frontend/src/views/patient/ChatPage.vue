@@ -189,7 +189,7 @@ async function handleSend(e?: KeyboardEvent) {
             ...messages.value.map(m => ({ role: m.role, content: m.content }))
         ]
 
-        const res: any = await llmApi.chat({
+        const res: any = await llmApi.patientChat({
             messages: chatMessages,
             temperature: 0.7,
             max_tokens: 2000
@@ -218,10 +218,8 @@ async function handleSend(e?: KeyboardEvent) {
         if (err.name !== 'AbortError' && err.code !== 'ERR_CANCELED') {
             const status = err?.response?.status
             let errMsg = 'AI服务调用失败，请检查网络或稍后重试。'
-            if (status === 401) {
-                errMsg = '登录已过期，请重新登录后重试。'
-            } else if (status === 403) {
-                errMsg = '权限不足，无法使用AI咨询功能。'
+            if (status === 503) {
+                errMsg = 'AI服务暂不可用，请稍后重试。'
             }
             messages.value.push({
                 role: 'assistant',
