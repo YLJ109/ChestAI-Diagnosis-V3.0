@@ -70,6 +70,43 @@
                         <el-form-item label="创建时间">
                             <el-input :model-value="profileForm.created_at || '-'" disabled />
                         </el-form-item>
+
+                        <!-- 人脸识别状态 -->
+                        <el-form-item label="人脸识别">
+                            <div class="face-status-inline">
+                                <el-icon v-if="hasFace" :size="20" color="#10B981">
+                                    <CircleCheck />
+                                </el-icon>
+                                <el-icon v-else :size="20" color="#9CA3AF">
+                                    <UserFilled />
+                                </el-icon>
+                                <span :class="['status-text', hasFace ? 'success' : 'inactive']">
+                                    {{ hasFace ? '已录入' : '未录入' }}
+                                </span>
+                                <el-button type="primary" link size="small" @click="showFaceDialog">
+                                    {{ hasFace ? '管理' : '录入' }}
+                                </el-button>
+                            </div>
+                        </el-form-item>
+
+                        <!-- 二维码显示 -->
+                        <el-form-item label="专属二维码">
+                            <div class="qrcode-inline">
+                                <img v-if="qrcodeBase64" :src="qrcodeBase64" alt="二维码" class="mini-qrcode" />
+                                <el-button type="primary" size="small" @click="fetchQrcode">
+                                    <el-icon>
+                                        <View />
+                                    </el-icon>
+                                    {{ qrcodeBase64 ? '刷新' : '查看' }}
+                                </el-button>
+                                <el-button v-if="qrcodeBase64" type="success" size="small" @click="downloadQrcode">
+                                    <el-icon>
+                                        <Download />
+                                    </el-icon>
+                                    下载
+                                </el-button>
+                            </div>
+                        </el-form-item>
                     </el-form>
 
                     <!-- 操作按钮 -->
@@ -183,9 +220,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Refresh, Check, CircleCheckFilled, CloseBold } from '@element-plus/icons-vue'
+import { User, Lock, Refresh, Check, CircleCheckFilled, CloseBold, CircleCheck, UserFilled, View, Download } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
-import { getProfileApi, updateProfileApi, changePasswordApi } from '@/api/auth'
+import { getProfileApi, updateProfileApi, changePasswordApi, getStaffQrcodeApi } from '@/api/auth'
+import { enrollStaffFaceApi, removeStaffFaceApi } from '@/api/face'
 
 const authStore = useAuthStore()
 
@@ -197,6 +235,14 @@ const roleLabelMap: Record<string, string> = {
 }
 
 const roleLabel = computed(() => roleLabelMap[profileForm.role] || profileForm.role)
+
+// 人脸识别状态
+const hasFace = ref(false)
+const faceDialogVisible = ref(false)
+const uploadRef = ref<any>(null)
+
+// 二维码相关
+const qrcodeBase64 = ref('')
 
 // 个人信息表单
 const profileFormRef = ref()
@@ -274,6 +320,8 @@ async function fetchProfile() {
             last_login_at: data.last_login_at || '',
             created_at: data.created_at || '',
         })
+        // 更新人脸状态
+        hasFace.value = data.has_face || false
     } catch (error: any) {
         ElMessage.error(error.message || '获取个人信息失败')
     }
@@ -346,6 +394,78 @@ function resetPasswordForm() {
     passwordForm.new_password = ''
     passwordForm.confirm_password = ''
     passwordFormRef.value?.clearValidate()
+}
+
+// ===== 人脸识别管理 =====
+function showFaceDialog() {
+    // 使用简单的文件选择对话框
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = async (e: any) => {
+        const file = e.target.files[0]
+        if (!file) return
+
+        // 验证文件类型
+        if (!file.type.startsWith('image/')) {
+            ElMessage.error('请选择图片文件')
+            return
+        }
+
+        // 验证文件大小 (最大 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            ElMessage.error('图片大小不能超过 5MB')
+            return
+        }
+
+        try {
+            ElMessage.info('正在录入人脸，请稍候...')
+            await enrollStaffFaceApi(profileForm.id, file)
+            ElMessage.success('人脸录入成功')
+            hasFace.value = true
+            fetchProfile()  // 刷新数据
+        } catch (err: any) {
+            console.error('人脸录入失败:', err)
+            ElMessage.error(err.response?.data?.message || '人脸录入失败')
+        }
+    }
+    input.click()
+}
+
+async function handleRemoveFace() {
+    try {
+        await removeStaffFaceApi(profileForm.id)
+        ElMessage.success('人脸数据已删除')
+        hasFace.value = false
+        fetchProfile()  // 刷新数据
+    } catch (err: any) {
+        console.error('删除人脸失败:', err)
+        ElMessage.error(err.response?.data?.message || '删除人脸失败')
+    }
+}
+
+// ===== 二维码功能 =====
+async function fetchQrcode() {
+    try {
+        const res: any = await getStaffQrcodeApi(profileForm.id)
+        qrcodeBase64.value = res.data.qrcode_base64
+        ElMessage.success('二维码加载成功')
+    } catch (err: any) {
+        console.error('获取二维码失败:', err)
+        ElMessage.error('获取二维码失败')
+    }
+}
+
+function downloadQrcode() {
+    if (!qrcodeBase64.value) return
+
+    const link = document.createElement('a')
+    link.href = qrcodeBase64.value
+    link.download = `${profileForm.username}_qrcode.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    ElMessage.success('二维码已下载')
 }
 
 onMounted(() => {
@@ -476,6 +596,41 @@ onMounted(() => {
             color: var(--text-muted);
             margin-top: 4px;
             display: block;
+        }
+
+        // 人脸识别状态
+        .face-status-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .status-text {
+                font-size: 14px;
+                font-weight: 500;
+
+                &.success {
+                    color: #10B981;
+                }
+
+                &.inactive {
+                    color: var(--text-muted);
+                }
+            }
+        }
+
+        // 二维码显示
+        .qrcode-inline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .mini-qrcode {
+                width: 60px;
+                height: 60px;
+                border-radius: 4px;
+                border: 1px solid var(--glass-border);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
         }
     }
 }

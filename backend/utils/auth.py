@@ -1,6 +1,6 @@
 """JWT认证工具"""
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import request, jsonify, current_app
 from models.user import User
@@ -9,25 +9,42 @@ from models.patient import Patient
 
 def generate_token(user_id, role, username):
     """生成JWT Token"""
+    now = datetime.now(timezone.utc)  # ⚠️ 关键修复：使用UTC时间
     payload = {
         'user_id': user_id,
         'role': role,
         'username': username,
-        'exp': datetime.utcnow() + timedelta(seconds=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']),
-        'iat': datetime.utcnow(),
+        'exp': now + timedelta(seconds=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']),
+        'iat': now,
     }
-    token = jwt.encode(payload, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
+    token = jwt.encode(
+        payload, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
     return token
 
 
 def decode_token(token):
     """解码JWT Token"""
     try:
-        payload = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        secret_key = current_app.config['JWT_SECRET_KEY']
+        # ⚠️ 关键修复：只在首次验证时输出密钥信息，避免刷屏
+        if not hasattr(decode_token, '_logged'):
+            print(
+                f'[Token验证] 密钥长度: {len(secret_key)}, 前20字符: {secret_key[:20]}...')
+            decode_token._logged = True
+
+        payload = jwt.decode(
+            token, secret_key, algorithms=['HS256'])
+
+        # ⚠️ 完全禁用成功日志，避免刷屏
+        # if current_app.debug:
+        #     print(f'[Token验证] ✅ 成功, user_id={payload.get("user_id")}, role={payload.get("role")}')
+
         return payload
     except jwt.ExpiredSignatureError:
+        print(f'[Token验证] ❌ Token已过期')
         return None
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        print(f'[Token验证] ❌ Token无效: {str(e)}')
         return None
 
 
@@ -58,6 +75,7 @@ def token_required(f):
             request.current_user = patient
             request.current_user_id = user_id
             request.current_user_role = 'patient'
+            request.current_username = payload.get('username', '')
         else:
             # 医护人员：从User表查询
             user = User.query.get(user_id)
@@ -66,6 +84,7 @@ def token_required(f):
             request.current_user = user
             request.current_user_id = user_id
             request.current_user_role = role
+            request.current_username = user.username
 
         return f(*args, **kwargs)
     return decorated

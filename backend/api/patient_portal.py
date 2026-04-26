@@ -187,7 +187,7 @@ def patient_report_detail(report_id):
                 'patient_gender': patient.gender if patient else '-',
                 'patient_age': patient.age if patient else None,
                 'patient_no': patient.patient_no if patient else '-',
-                'patient_id_display': patient.id if patient else None,  # 添加患者ID用于显示
+                'patient': patient.to_dict() if patient else None,  # 完整患者信息（包含 face_image_path）
             },
             'probabilities': [p.to_dict() for p in probs],
         }

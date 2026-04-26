@@ -2,70 +2,86 @@
 <template>
   <div class="users-page">
     <div class="glass-card">
-      <!-- 搜索筛选栏 -->
+      <!-- 搜索筛选栏 - 单行紧凑布局 -->
       <div class="filter-bar">
-        <div class="filter-item">
-          <el-input v-model="filters.keyword" placeholder="用户名/姓名/科室" clearable
-            @keyup.enter="search" class="filter-input">
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-        </div>
-        <div class="filter-item">
-          <el-select v-model="filters.role" placeholder="角色" clearable>
-            <el-option label="管理员" value="admin" />
-            <el-option label="医生" value="doctor" />
-            <el-option label="护士" value="nurse" />
-          </el-select>
-        </div>
-        <div class="filter-item">
-          <el-select v-model="filters.status" placeholder="状态" clearable>
-            <el-option label="启用" value="active" />
-            <el-option label="禁用" value="disabled" />
-          </el-select>
-        </div>
+        <el-input v-model="filters.keyword" placeholder="用户名/姓名/科室" clearable @keyup.enter="search"
+          style="width: 240px;">
+          <template #prefix><el-icon>
+              <Search />
+            </el-icon></template>
+        </el-input>
+        <el-select v-model="filters.role" placeholder="角色" clearable style="width: 120px;">
+          <el-option label="管理员" value="admin" />
+          <el-option label="医生" value="doctor" />
+          <el-option label="护士" value="nurse" />
+        </el-select>
+        <el-select v-model="filters.status" placeholder="状态" clearable style="width: 120px;">
+          <el-option label="启用" value="active" />
+          <el-option label="禁用" value="disabled" />
+        </el-select>
         <div class="filter-actions">
           <el-button type="primary" @click="search">
-            <el-icon><Search /></el-icon> 搜索
+            <el-icon>
+              <Search />
+            </el-icon> 搜索
           </el-button>
           <el-button @click="resetFilters">
-            <el-icon><Refresh /></el-icon> 重置
+            <el-icon>
+              <Refresh />
+            </el-icon> 重置
           </el-button>
-        </div>
-        <div class="filter-actions" style="margin-left: auto;">
+          <el-divider direction="vertical" />
           <el-button type="primary" @click="openDialog('create')">
-            <el-icon><Plus /></el-icon> 新增用户
+            <el-icon>
+              <Plus />
+            </el-icon> 新增用户
           </el-button>
         </div>
       </div>
 
       <!-- 数据表格 -->
       <el-table :data="tableData" v-loading="loading" empty-text="暂无用户数据" class="glass-table">
-        <el-table-column prop="username" label="用户名" width="120" />
-        <el-table-column prop="real_name" label="姓名" width="100" />
-        <el-table-column prop="role" label="角色" width="100">
+        <el-table-column prop="username" label="用户名" min-width="120" />
+        <el-table-column prop="real_name" label="姓名" min-width="100" />
+        <el-table-column prop="role" label="角色" min-width="100">
           <template #default="{ row }">
             <span class="role-badge" :class="row.role">
               {{ roleMap[row.role] || row.role }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="department" label="科室" width="120" />
-        <el-table-column prop="phone" label="电话" width="130" />
-        <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="80">
+        <el-table-column prop="department" label="科室" min-width="120" />
+        <el-table-column prop="phone" label="电话" min-width="130" />
+        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="status" label="状态" min-width="80">
           <template #default="{ row }">
             <span class="status-dot" :class="row.status === 'active' ? 'active' : 'inactive'"></span>
             <span class="status-text">{{ row.status === 'active' ? '启用' : '禁用' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="last_login_at" label="最后登录" width="170" />
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column prop="last_login_at" label="最后登录" min-width="170" />
+        <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" class="action-link" @click="openDialog('edit', row)">编辑</el-button>
-            <el-button type="warning" link size="small" class="action-link" @click="openResetPassword(row)">重置密码</el-button>
+            <el-button type="primary" link size="small" class="action-link"
+              @click="openDialog('edit', row)">编辑</el-button>
+            <el-button type="warning" link size="small" class="action-link"
+              @click="openResetPassword(row)">重置密码</el-button>
+            <el-button type="success" link size="small" class="action-link" @click="openFaceManage(row)">
+              <el-icon>
+                <Camera />
+              </el-icon>
+              {{ row.has_face ? '管理人脸' : '录入人脸' }}
+            </el-button>
+            <el-button type="info" link size="small" class="action-link" @click="showQrcode(row)">
+              <el-icon>
+                <Share />
+              </el-icon>
+              二维码
+            </el-button>
             <el-popconfirm title="确定删除此用户？" @confirm="handleDelete(row)">
               <template #reference>
-                <el-button type="danger" link size="small" class="action-link" :disabled="row.id === currentUserId">删除</el-button>
+                <el-button type="danger" link size="small" class="action-link"
+                  :disabled="row.id === currentUserId">删除</el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -75,8 +91,8 @@
       <!-- 分页 -->
       <div class="pagination-wrap">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.per_page"
-          :total="pagination.total" :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper" @size-change="fetchData" @current-change="fetchData" />
+          :total="pagination.total" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper"
+          @size-change="fetchData" @current-change="fetchData" />
       </div>
     </div>
 
@@ -136,16 +152,82 @@
         <el-button type="primary" @click="handleResetPassword">确定重置</el-button>
       </template>
     </el-dialog>
+
+    <!-- 人脸识别管理对话框 -->
+    <el-dialog v-model="faceDialogVisible" :title="`${faceUser?.real_name} - 人脸管理`" width="500px">
+      <div class="face-manage-content">
+        <div v-if="faceUser?.has_face" class="face-status">
+          <el-icon :size="64" color="#10B981">
+            <CircleCheck />
+          </el-icon>
+          <p class="status-text">已录入人脸</p>
+          <p class="status-hint">可以重新录入或删除现有数据</p>
+        </div>
+        <div v-else class="face-status empty">
+          <el-icon :size="64" color="#9CA3AF">
+            <UserFilled />
+          </el-icon>
+          <p class="status-text">未录入人脸</p>
+          <p class="status-hint">点击下方按钮开始录入</p>
+        </div>
+
+        <div class="face-actions">
+          <el-upload ref="uploadRef" :auto-upload="false" :on-change="handleFaceFileChange" accept="image/*"
+            :show-file-list="false" style="width: 100%">
+            <el-button type="primary" size="large" style="width: 100%">
+              <el-icon>
+                <Upload />
+              </el-icon>
+              {{ faceUser?.has_face ? '重新录入人脸' : '录入人脸' }}
+            </el-button>
+          </el-upload>
+
+          <el-button v-if="faceUser?.has_face" type="danger" size="large" @click="handleRemoveFace"
+            style="width: 100%; margin-top: 12px">
+            <el-icon>
+              <Delete />
+            </el-icon>
+            删除人脸数据
+          </el-button>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 二维码显示对话框 -->
+    <el-dialog v-model="qrcodeDialogVisible" :title="`${qrcodeUser?.real_name} - 专属二维码`" width="400px">
+      <div class="qrcode-content">
+        <div v-if="qrcodeData?.qrcode_base64" class="qrcode-display">
+          <img :src="qrcodeData.qrcode_base64" alt="二维码" class="qrcode-image" />
+          <p class="qrcode-info">用户名: {{ qrcodeData.username }}</p>
+          <p class="qrcode-info">姓名: {{ qrcodeData.real_name }}</p>
+          <p class="qrcode-info">角色: {{ roleMap[qrcodeData.role] || qrcodeData.role }}</p>
+          <el-button type="primary" @click="downloadQrcode" style="margin-top: 16px">
+            <el-icon>
+              <Download />
+            </el-icon>
+            下载二维码
+          </el-button>
+        </div>
+        <div v-else class="qrcode-loading">
+          <el-icon class="is-loading" :size="48">
+            <Loading />
+          </el-icon>
+          <p>正在生成二维码...</p>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, Plus } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Camera, Share, Upload, Delete, Download, Loading, CircleCheck, UserFilled } from '@element-plus/icons-vue'
 import { getUsersApi, updateUserApi, deleteUserApi, resetPasswordApi } from '@/api/users'
 import { registerApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
+import { enrollStaffFaceApi, removeStaffFaceApi, getStaffFaceStatusApi } from '@/api/face'
+import { getStaffQrcodeApi } from '@/api/auth'
 
 const authStore = useAuthStore()
 const currentUserId = computed(() => authStore.user?.id)
@@ -157,11 +239,22 @@ const submitting = ref(false)
 const tableData = ref<any[]>([])
 const dialogVisible = ref(false)
 const resetPwdVisible = ref(false)
+const faceDialogVisible = ref(false)  // 人脸管理对话框
+const qrcodeDialogVisible = ref(false)  // 二维码对话框
 const dialogMode = ref<'create' | 'edit'>('create')
 const editId = ref<number | null>(null)
 const formRef = ref<any>(null)
 const resetUser = ref<any>(null)
 const newPassword = ref('')
+const uploadRef = ref<any>(null)  // 上传组件引用
+
+// 人脸管理相关
+const faceUser = ref<any>(null)
+const selectedFaceFile = ref<File | null>(null)
+
+// 二维码相关
+const qrcodeUser = ref<any>(null)
+const qrcodeData = ref<any>(null)
 
 const filters = reactive({ keyword: '', role: '', status: '' })
 const pagination = reactive({ page: 1, per_page: 20, total: 0 })
@@ -275,48 +368,129 @@ async function handleResetPassword() {
   } catch { /* handled */ }
 }
 
+// ===== 人脸识别管理 =====
+function openFaceManage(row: any) {
+  faceUser.value = row
+  selectedFaceFile.value = null
+  faceDialogVisible.value = true
+}
+
+async function handleFaceFileChange(file: any) {
+  if (!faceUser.value) return
+
+  const rawFile = file.raw
+  if (!rawFile) return
+
+  // 验证文件类型
+  if (!rawFile.type.startsWith('image/')) {
+    ElMessage.error('请选择图片文件')
+    return
+  }
+
+  // 验证文件大小 (最大 5MB)
+  if (rawFile.size > 5 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 5MB')
+    return
+  }
+
+  selectedFaceFile.value = rawFile
+
+  try {
+    ElMessage.info('正在录入人脸，请稍候...')
+    await enrollStaffFaceApi(faceUser.value.id, rawFile)
+    ElMessage.success('人脸录入成功')
+    faceDialogVisible.value = false
+    fetchData()  // 刷新列表
+  } catch (err: any) {
+    console.error('人脸录入失败:', err)
+    ElMessage.error(err.response?.data?.message || '人脸录入失败')
+  }
+}
+
+async function handleRemoveFace() {
+  if (!faceUser.value) return
+
+  try {
+    await removeStaffFaceApi(faceUser.value.id)
+    ElMessage.success('人脸数据已删除')
+    faceDialogVisible.value = false
+    fetchData()  // 刷新列表
+  } catch (err: any) {
+    console.error('删除人脸失败:', err)
+    ElMessage.error(err.response?.data?.message || '删除人脸失败')
+  }
+}
+
+// ===== 二维码功能 =====
+async function showQrcode(row: any) {
+  qrcodeUser.value = row
+  qrcodeData.value = null
+  qrcodeDialogVisible.value = true
+
+  try {
+    const res: any = await getStaffQrcodeApi(row.id)
+    qrcodeData.value = res.data
+  } catch (err: any) {
+    console.error('获取二维码失败:', err)
+    ElMessage.error('获取二维码失败')
+    qrcodeDialogVisible.value = false
+  }
+}
+
+function downloadQrcode() {
+  if (!qrcodeData.value?.qrcode_base64) return
+
+  const link = document.createElement('a')
+  link.href = qrcodeData.value.qrcode_base64
+  link.download = `${qrcodeData.value.username}_qrcode.png`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  ElMessage.success('二维码已下载')
+}
+
 onMounted(() => fetchData())
 </script>
 
 <style scoped lang="scss">
 .users-page {
-  // 筛选栏
+
+  // 筛选栏 - 单行紧凑布局
   .filter-bar {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--glass-border);
     flex-wrap: wrap;
 
-    .filter-item {
-      display: flex;
-      align-items: center;
+    :deep(.el-input__wrapper) {
+      height: 36px !important;
+      padding: 0 12px !important;
+    }
 
-      .filter-input {
-        width: 220px;
-      }
-
-      :deep(.el-input__wrapper) {
-        height: 36px !important;
-        padding: 0 12px !important;
-      }
-
-      :deep(.el-select .el-select__wrapper) {
-        height: 36px !important;
-        min-height: 36px !important;
-      }
+    :deep(.el-select .el-select__wrapper) {
+      height: 36px !important;
+      min-height: 36px !important;
     }
 
     .filter-actions {
       display: flex;
       gap: 8px;
+      margin-left: auto;
 
       :deep(.el-button) {
         height: 36px !important;
-        padding: 0 16px !important;
+        padding: 0 14px !important;
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+
+      :deep(.el-divider--vertical) {
+        height: 24px;
+        margin: 0 4px;
       }
     }
   }
@@ -332,9 +506,20 @@ onMounted(() => fetchData())
     font-weight: 600;
     min-width: 60px;
 
-    &.admin { background: rgba(239, 68, 68, 0.15); color: #F87171; }
-    &.doctor { background: rgba(34, 211, 238, 0.2); color: var(--primary); }
-    &.nurse { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    &.admin {
+      background: rgba(239, 68, 68, 0.15);
+      color: #F87171;
+    }
+
+    &.doctor {
+      background: rgba(34, 211, 238, 0.2);
+      color: var(--primary);
+    }
+
+    &.nurse {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--blue);
+    }
   }
 
   // 状态指示
@@ -368,6 +553,73 @@ onMounted(() => fetchData())
     margin-top: 20px;
   }
 
+  // 人脸管理内容
+  .face-manage-content {
+    text-align: center;
+    padding: 20px 0;
+
+    .face-status {
+      margin-bottom: 32px;
+
+      &.empty {
+        .status-text {
+          color: var(--text-secondary);
+        }
+      }
+
+      .status-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 16px 0 8px;
+      }
+
+      .status-hint {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin: 0;
+      }
+    }
+
+    .face-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+  }
+
+  // 二维码内容
+  .qrcode-content {
+    text-align: center;
+    padding: 20px 0;
+
+    .qrcode-display {
+      .qrcode-image {
+        width: 240px;
+        height: 240px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 16px;
+      }
+
+      .qrcode-info {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 8px 0;
+      }
+    }
+
+    .qrcode-loading {
+      padding: 40px 0;
+
+      p {
+        margin-top: 16px;
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+    }
+  }
+
   // 表格单元格垂直居中
   :deep(.el-table__cell) {
     display: table-cell !important;
@@ -388,6 +640,7 @@ onMounted(() => fetchData())
   // 表格居中的列
   :deep(.el-table__body tr td) {
     .cell {
+
       &:has(.role-badge),
       &:has(.status-dot) {
         justify-content: center;
@@ -401,6 +654,7 @@ onMounted(() => fetchData())
 .action-link {
   background: transparent !important;
   padding: 2px 6px !important;
+
   &:hover {
     background: transparent !important;
     opacity: 0.8;

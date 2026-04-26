@@ -40,6 +40,10 @@ def create_app():
     socketio.init_app(app)
     limiter.init_app(app)
 
+    # 初始化自定义限流器
+    from utils.rate_limiter import init_rate_limiter
+    init_rate_limiter(app)
+
     # 注册蓝图
     for bp in all_blueprints:
         app.register_blueprint(bp)
@@ -71,7 +75,48 @@ def create_app():
 
     @app.errorhandler(500)
     def internal_error(e):
-        return {'code': 500, 'message': '服务器内部错误'}, 500
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[服务器错误] {error_trace}")
+        return {'code': 500, 'message': '服务器内部错误', 'error': str(e) if app.debug else None}, 500
+
+    @app.errorhandler(429)
+    def rate_limit_exceeded(e):
+        return {
+            'code': 429,
+            'message': '请求过于频繁，请稍后再试',
+            'error_code': 'RATE_LIMIT_EXCEEDED'
+        }, 429
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        """捕获所有未处理的异常"""
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[未处理异常] {error_trace}")
+
+        # 记录到审计日志（如果有用户上下文）
+        try:
+            from flask import request
+            from models.audit import AuditLog
+            audit_log = AuditLog(
+                user_id=None,
+                action='EXCEPTION',
+                resource=request.path if request else 'unknown',
+                details=f'{type(e).__name__}: {str(e)}',
+                ip_address=request.remote_addr if request else None
+            )
+            db.session.add(audit_log)
+            db.session.commit()
+        except:
+            pass  # 忽略审计日志记录失败
+
+        return {
+            'code': 500,
+            'message': '服务器内部错误',
+            'error': str(e) if app.debug else None,
+            'type': type(e).__name__
+        }, 500
 
     # 应用启动后加载AI模型
     with app.app_context():

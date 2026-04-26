@@ -20,28 +20,38 @@
           <p class="login-subtitle-en">Chest X-ray AI Intelligent Diagnosis System</p>
         </div>
 
-        <!-- 表单区域 -->
-        <el-form ref="formRef" :model="loginForm" :rules="rules" class="login-form">
-          <el-form-item prop="username">
-            <el-input v-model="loginForm.username" placeholder="请输入用户名" prefix-icon="User" size="large"
-              @keyup.enter="handleLogin" />
-          </el-form-item>
-          <el-form-item prop="password">
-            <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock" size="large"
-              show-password @keyup.enter="handleLogin" />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="handleLogin">
-              <span v-if="!loading">登 录</span>
-              <span v-else>正在验证...</span>
-            </el-button>
-          </el-form-item>
-        </el-form>
+        <!-- 登录方式切换 -->
+        <el-tabs v-model="activeTab" class="login-tabs">
+          <el-tab-pane label="密码登录" name="password">
+            <!-- 表单区域 -->
+            <el-form ref="formRef" :model="loginForm" :rules="rules" class="login-form">
+              <el-form-item prop="username">
+                <el-input v-model="loginForm.username" placeholder="请输入用户名" prefix-icon="User" size="large"
+                  @keyup.enter="handleLogin" />
+              </el-form-item>
+              <el-form-item prop="password">
+                <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock"
+                  size="large" show-password @keyup.enter="handleLogin" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="handleLogin">
+                  <span v-if="!loading">登 录</span>
+                  <span v-else>正在验证...</span>
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+
+          <el-tab-pane label="刷脸登录" name="face">
+            <!-- 人脸识别组件 -->
+            <StaffFaceLogin @login-success="handleFaceLoginSuccess" />
+          </el-tab-pane>
+        </el-tabs>
 
         <!-- 患者入口 -->
         <div class="patient-entry">
           <span class="entry-divider">或</span>
-          <el-button text type="primary" class="entry-link" @click="goPatientLogin">
+          <el-button text class="entry-link" @click="goPatientLogin">
             <el-icon>
               <Avatar />
             </el-icon>
@@ -73,12 +83,14 @@ import { ElMessage } from 'element-plus'
 import { Warning, Avatar } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import StaffFaceLogin from '@/views/staff/StaffFaceLogin.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const activeTab = ref('password')  // 默认密码登录
 const loginForm = reactive({ username: '', password: '' })
 
 const rules = {
@@ -94,12 +106,31 @@ async function handleLogin() {
   try {
     await authStore.login(loginForm.username, loginForm.password)
     ElMessage.success('登录成功')
+
+    // ⚠️ 关键修复：验证Token是否已保存
+    const savedToken = localStorage.getItem('token')
+    if (!savedToken) {
+      console.error('[Login] Token未保存，重试...')
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
+
+    console.log('[Login] Token已保存，长度:', savedToken?.length)
+
+    // 再等待一个tick确保完全生效
+    await new Promise(resolve => setTimeout(resolve, 100))
     router.push('/staff/dashboard')
   } catch {
     // error handled by interceptor
   } finally {
     loading.value = false
   }
+}
+
+// 处理人脸识别登录成功
+function handleFaceLoginSuccess(staffData: any) {
+  console.log('[LoginPage] 刷脸登录成功:', staffData)
+  ElMessage.success(`欢迎，${staffData.real_name}`)
+  router.push('/staff/dashboard')
 }
 
 function goPatientLogin() {
@@ -183,8 +214,35 @@ function goPatientLogin() {
 }
 
 /* ===== 表单 ===== */
-.login-form {
+.login-tabs {
   margin-top: 32px;
+}
+
+.login-tabs :deep(.el-tabs__header) {
+  margin-bottom: 24px;
+}
+
+.login-tabs :deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.login-tabs :deep(.el-tabs__item) {
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.login-tabs :deep(.el-tabs__item.is-active) {
+  color: var(--primary);
+}
+
+.login-tabs :deep(.el-tabs__active-bar) {
+  background-color: var(--primary);
+}
+
+.login-form {
+  margin-top: 0;
 }
 
 .login-btn {
@@ -212,14 +270,18 @@ function goPatientLogin() {
 
 .entry-link {
   font-size: 13px;
-  color: var(--primary);
+  background: #FFFFFF !important;
+  color: #3B82F6 !important;
+  border: 1px solid #3B82F6 !important;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .entry-link:hover {
-  color: #67e8f9;
+  background: #3B82F6 !important;
+  color: #FFFFFF !important;
+  border-color: #3B82F6 !important;
 }
 
 /* ===== 底部 ===== */

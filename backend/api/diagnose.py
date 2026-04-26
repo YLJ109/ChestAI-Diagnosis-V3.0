@@ -4,14 +4,13 @@ import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from extensions import db
-from services.ai_service import predict_image, get_runtime_params
+from services.ai_service import predict_image, get_runtime_params, load_model, is_model_loaded
 from models.diagnosis import Diagnosis, DiseaseProbability
 from models.patient import Patient
 from models.report import Report
 from models.audit import AuditLog
 from utils.auth import token_required, role_required
 from utils.validators import allowed_file
-from services.ai_service import predict_image, load_model, is_model_loaded, CN_NAMES, CLASS_NAMES
 from services.report_service import create_diagnosis_report
 from models.approval import Approval
 
@@ -74,7 +73,7 @@ def diagnose_single():
         # 创建诊断记录
         diagnosis = Diagnosis(
             diagnosis_no=diagnosis_no,
-            patient_id=patient.id if patient else 0,
+            patient_id=patient.id if patient else None,
             doctor_id=request.current_user_id,
             technician_id=request.current_user_id,
             image_path=f"images/{filename}",
@@ -166,6 +165,13 @@ def diagnose_single():
             'skip_report': skip_report,
         }
 
+        # 确保路径使用正斜杠
+        if response_data['heatmap_url']:
+            response_data['heatmap_url'] = response_data['heatmap_url'].replace(
+                '\\', '/')
+        response_data['image_url'] = response_data['image_url'].replace(
+            '\\', '/')
+
         # 仅在未跳过时返回报告内容
         if not skip_report and report_data:
             response_data['ai_report'] = {
@@ -180,6 +186,68 @@ def diagnose_single():
     except Exception as e:
         db.session.rollback()
         return jsonify({'code': 500, 'message': f'诊断失败: {str(e)}'}), 500
+
+
+@diagnose_bp.route('/<int:diagnosis_id>/print', methods=['GET'])
+@token_required
+def get_print_data(diagnosis_id):
+    """获取统一打印数据（所有模块共用）"""
+    try:
+        diagnosis = Diagnosis.query.get(diagnosis_id)
+        if not diagnosis:
+            return jsonify({'code': 404, 'message': '诊断记录不存在'}), 404
+
+        # 获取患者信息
+        patient = Patient.query.get(
+            diagnosis.patient_id) if diagnosis.patient_id else None
+
+        # 获取疾病概率
+        probs = DiseaseProbability.query.filter_by(diagnosis_id=diagnosis_id)\
+            .order_by(DiseaseProbability.probability.desc()).all()
+
+        # 获取最新报告
+        report = Report.query.filter_by(diagnosis_id=diagnosis_id)\
+            .order_by(Report.version_no.desc()).first()
+
+        # 构建报告文本
+        report_text = ''
+        if report:
+            parts = []
+            if report.findings:
+                parts.append('【检查所见】\n' + report.findings)
+            if report.impression:
+                parts.append('【诊断意见】\n' + report.impression)
+            if report.recommendations:
+                parts.append('【建议】\n' + report.recommendations)
+            report_text = '\n\n'.join(parts)
+
+        return jsonify({
+            'code': 200,
+            'data': {
+                # 诊断信息
+                'diagnosis_id': diagnosis.id,
+                'diagnosis_no': diagnosis.diagnosis_no,
+                'created_at': diagnosis.created_at.strftime('%Y-%m-%d %H:%M:%S') if diagnosis.created_at else '',
+                'image_url': f'/static/{diagnosis.image_path.replace(chr(92), "/")}' if diagnosis.image_path else '',
+                'heatmap_url': f'/static/{diagnosis.heatmap_path.replace(chr(92), "/")}' if diagnosis.heatmap_path else '',
+
+                # 患者信息
+                'patient_id': patient.id if patient else None,
+                'patient_name': patient.name if patient else '-',
+                'patient_gender': patient.gender if patient else '-',
+                'patient_age': patient.age if patient else None,
+                'patient_no': patient.patient_no if patient else '-',
+                'patient_photo_url': f'/static/{patient.face_image_path.replace(chr(92), "/")}' if patient and patient.face_image_path else '',
+
+                # 诊断结果
+                'probabilities': [p.to_dict() for p in probs],
+
+                # 报告内容
+                'report_text': report_text,
+            }
+        })
+    except Exception as e:
+        return jsonify({'code': 500, 'message': f'获取打印数据失败: {str(e)}'}), 500
 
 
 @diagnose_bp.route('/<int:diagnosis_id>', methods=['GET'])
@@ -267,11 +335,36 @@ def get_diagnosis_list():
 @diagnose_bp.route('/<int:diagnosis_id>', methods=['DELETE'])
 @token_required
 def delete_diagnosis(diagnosis_id):
-    """删除诊断记录"""
+    """删除诊断记录（级联删除审批和文件）"""
+    import os
     diagnosis = Diagnosis.query.get_or_404(diagnosis_id)
-    # 级联删除关联的概率和报告
-    DiseaseProbability.query.filter_by(diagnosis_id=diagnosis_id).delete()
+
+    # 1. 删除关联的审批记录
+    Approval.query.filter_by(diagnosis_id=diagnosis_id).delete()
+
+    # 2. 删除关联的报告
     Report.query.filter_by(diagnosis_id=diagnosis_id).delete()
+
+    # 3. 删除关联的疾病概率
+    DiseaseProbability.query.filter_by(diagnosis_id=diagnosis_id).delete()
+
+    # 4. 删除物理文件（影像和热力图）
+    try:
+        if diagnosis.image_path:
+            image_full_path = os.path.join(
+                current_app.config['UPLOAD_FOLDER'], diagnosis.image_path)
+            if os.path.exists(image_full_path):
+                os.remove(image_full_path)
+
+        if diagnosis.heatmap_path:
+            heatmap_full_path = os.path.join(
+                current_app.config['UPLOAD_FOLDER'], diagnosis.heatmap_path)
+            if os.path.exists(heatmap_full_path):
+                os.remove(heatmap_full_path)
+    except Exception as e:
+        print(f"[删除诊断] 文件删除失败: {e}")
+
+    # 5. 删除诊断记录
     db.session.delete(diagnosis)
     db.session.commit()
     return jsonify({'code': 200, 'message': '删除成功'})

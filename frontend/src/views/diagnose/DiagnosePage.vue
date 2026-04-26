@@ -392,10 +392,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { diagnoseSingleApi } from '@/api/diagnose'
 import { getPatientsApi } from '@/api/patients'
 import { regenerateReportApi } from '@/api/reports'
 import { ElMessage } from 'element-plus'
+
+const router = useRouter()
 import { User, Upload, Delete, Picture, Refresh, Printer, Cpu, CircleCheck, Warning, Document, InfoFilled, SetUp } from '@element-plus/icons-vue'
 import type { UploadFile } from 'element-plus'
 
@@ -618,131 +621,8 @@ async function handlePrintReport() {
   const r = result.value
   if (!r) return
 
-  const patientInfo = currentPatient.value
-  const patientName = patientInfo?.name || '-'
-  const patientGender = patientInfo?.gender === 'male' ? '男' : (patientInfo?.gender === 'female' ? '女' : '-')
-  const patientAge = patientInfo?.age ? `${patientInfo.age}岁` : '-'
-  const patientNo = patientInfo?.patient_no || '-'
-  const imageSrc = imagePreviewUrl.value || r.image_url || ''
-  const heatmapSrc = r.heatmap_url || ''
-  const resultCn = resultLabel.value
-  const confidence = topConfidence.value
-  const recordNo = r.diagnosis_no || '-'
-  const reportText = reportContent.value || ''
-
-  const resultColor = topResult.value === 'normal' ? '#06B6D4' : '#D97706'
-  const resultBg = topResult.value === 'normal' ? '#ECFDF5' : '#FFFBEB'
-  const resultIcon = topResult.value === 'normal' ? '&#10003;' : '&#9888;'
-
-  const now = new Date()
-  const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-
-  // 概率条HTML（前5种）
-  const probBarsHtml = top5Probs.value.map((p: any) => {
-    const pct = (p.probability * 100).toFixed(1)
-    const color = probColor(p.disease_code)
-    return `<div class="pr">
-      <span class="pl">${p.disease_name_zh}</span>
-      <div class="pw"><div class="pf" style="background:${color};width:${pct}%"></div></div>
-      <span class="pv">${pct}%</span>
-    </div>`
-  }).join('')
-
-  // 转换图片为base64
-  const [imgBase64, heatmapBase64] = await Promise.all([
-    imageSrc ? imageToBase64(imageSrc) : Promise.resolve(''),
-    heatmapSrc ? imageToBase64(heatmapSrc) : Promise.resolve('')
-  ])
-
-  const printWin = window.open('', '_blank')
-  if (!printWin) return
-  printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>诊断报告-${recordNo}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  @page{size:A4;margin:10mm}
-  body{font-family:'Microsoft YaHei','PingFang SC',sans-serif;background:#fff;color:#1e293b;font-size:11px;line-height:1.5}
-  .page{padding:8mm 10mm;max-height:100vh;overflow:hidden;display:flex;flex-direction:column}
-  .hd{text-align:center;padding-bottom:10px;margin-bottom:12px;border-bottom:2px solid #0f172a;position:relative}
-  .hd::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:50px;height:2.5px;background:#22D3EE;border-radius:2px}
-  .hd h1{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:3px}
-  .hd .sub{font-size:11px;color:#94a3b8;letter-spacing:1px;margin-top:3px}
-  .main{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;min-height:0}
-  .col-img{display:flex;flex-direction:column;gap:8px}
-  .ib{border:1px solid #e2e8f0;border-radius:4px;overflow:hidden;background:#f8fafc}
-  .ib .il{font-size:10px;font-weight:600;color:#475569;padding:4px 8px;background:#f1f5f9;border-bottom:1px solid #e2e8f0}
-  .ib .iw{height:150px;display:flex;align-items:center;justify-content:center;padding:4px}
-  .ib img{max-width:100%;max-height:100%;object-fit:contain}
-  .col-res{display:flex;flex-direction:column;gap:8px}
-  .pat-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px}
-  .pat-info .pat-header{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
-  .pat-info .pat-name{font-size:17px;font-weight:700;color:#0f172a}
-  .pat-info .pat-ga{font-size:11px;color:#64748b}
-  .pat-info .pat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:10px}
-  .pat-info .pi-row{display:flex;justify-content:space-between}
-  .pat-info .pi-lb{color:#94a3b8}
-  .pat-info .pi-vl{color:#0f172a;font-weight:600}
-  .rb{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;border:2px solid ${resultColor};background:${resultBg}}
-  .ri{font-size:28px;color:${resultColor};font-weight:700;line-height:1}
-  .rt .rl{font-size:17px;font-weight:700;color:${resultColor}}
-  .rt .rc{font-size:10px;color:#64748b;margin-top:2px}
-  .pg{display:flex;flex-direction:column;gap:4px}
-  .pr{display:flex;align-items:center;gap:8px;font-size:10px}
-  .pr .pl{width:50px;color:#475569;font-weight:500;text-align:right;flex-shrink:0}
-  .pr .pw{flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
-  .pr .pf{height:100%;border-radius:3px}
-  .pr .pv{width:48px;color:#0f172a;font-weight:600;text-align:right;flex-shrink:0}
-  .rtx{background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:10px;font-size:10.5px;line-height:1.7;color:#334155;white-space:pre-wrap;word-break:break-all;margin-top:8px}
-  .ft{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #e2e8f0;font-size:9px;color:#94a3b8}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{padding:0;max-height:none;overflow:visible}}
-</style></head><body>
-<div class="page">
-  <div class="hd">
-    <h1>胸部X光AI辅助诊断报告</h1>
-    <div class="sub">AI-assisted Chest X-ray Diagnosis Report</div>
-  </div>
-  <div class="main">
-    <div class="col-img">
-      <div class="ib">
-        <div class="il">原始胸部X光片</div>
-        <div class="iw">${imgBase64 ? `<img src="${imgBase64}" />` : '<span style="color:#94a3b8">暂无影像</span>'}</div>
-      </div>
-      ${heatmapBase64 ? `<div class="ib">
-        <div class="il">Grad-CAM 热力图</div>
-        <div class="iw"><img src="${heatmapBase64}" /></div>
-      </div>` : ''}
-    </div>
-    <div class="col-res">
-      <div class="pat-info">
-        <div class="pat-header">
-          <span class="pat-name">${patientName}</span>
-          <span class="pat-ga">${patientGender} | ${patientAge}</span>
-        </div>
-        <div class="pat-grid">
-          <div class="pi-row"><span class="pi-lb">患者编号</span><span class="pi-vl">${patientNo}</span></div>
-          <div class="pi-row"><span class="pi-lb">记录编号</span><span class="pi-vl">${recordNo}</span></div>
-          <div class="pi-row"><span class="pi-lb">报告日期</span><span class="pi-vl">${dateStr}</span></div>
-          <div class="pi-row"><span class="pi-lb">诊断时间</span><span class="pi-vl">${now.toLocaleString('zh-CN')}</span></div>
-        </div>
-      </div>
-      <div class="rb">
-        <div class="ri">${resultIcon}</div>
-        <div class="rt">
-          <div class="rl">${resultCn}</div>
-          <div class="rc">置信度 ${confidence}%</div>
-        </div>
-      </div>
-      <div class="pg">${probBarsHtml}</div>
-    </div>
-  </div>
-  ${reportText ? `<div class="rtx">${reportText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : ''}
-  <div class="ft">
-    <span>本报告由AI辅助诊断系统生成，仅供临床医生参考</span>
-    <span>打印时间: ${now.toLocaleString('zh-CN')}</span>
-  </div>
-</div>
-</body></html>`)
-  printWin.document.close()
-  setTimeout(() => printWin.print(), 500)
+  // 跳转到统一打印页面（业务端路由）
+  router.push({ name: 'ReportPrint', params: { id: r.diagnosis_id } })
 }
 
 onMounted(async () => {

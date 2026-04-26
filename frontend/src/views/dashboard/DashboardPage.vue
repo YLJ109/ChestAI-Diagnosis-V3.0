@@ -199,6 +199,13 @@ const trendOption = computed(() => {
 })
 
 onMounted(async () => {
+  // ⚠️ 关键修复：等待Token完全生效
+  const token = localStorage.getItem('token')
+  if (!token) {
+    console.warn('[Dashboard] Token未找到，等待200ms后重试...')
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+
   try {
     const [statsRes, distRes, trendRes]: any[] = await Promise.all([
       getDashboardStatsApi(),
@@ -208,7 +215,9 @@ onMounted(async () => {
     stats.value = statsRes.data || statsRes
     diseaseData.value = distRes.data || distRes
     trendData.value = trendRes.data || trendRes
-  } catch { /* ok */ }
+  } catch (err) {
+    console.error('[Dashboard] 数据加载失败:', err)
+  }
 })
 </script>
 

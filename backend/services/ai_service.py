@@ -1,9 +1,8 @@
-"""AI推理服务 - ONNX加速推理 + PyTorch Grad-CAM + 多线程批量处理
+"""AI推理服务 - ONNX加速推理 + PyTorch Grad-CAM
 
 架构设计:
-  - ONNX Runtime: 主推理引擎（速度快 2-5x，支持多线程）
+  - ONNX Runtime: 主推理引擎（速度快 2-5x）
   - PyTorch: 仅用于 Grad-CAM 热力图生成（需要反向传播），懒加载
-  - ThreadPoolExecutor: 批量诊断时并行预处理 + ONNX 批量推理
 """
 import os
 import sys
@@ -13,7 +12,6 @@ import numpy as np
 from PIL import Image
 from torchvision import transforms, models
 import torch.nn as nn
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import queue
 import time
@@ -160,10 +158,6 @@ _grad_cam = None            # Grad-CAM 实例
 _device = None             # torch device
 _use_onnx = False          # 是否使用 ONNX 推理
 _lock = threading.Lock()   # 线程安全锁
-
-# 线程池：用于批量诊断时的并行图像预处理 + 推理
-_preprocess_pool = ThreadPoolExecutor(
-    max_workers=4, thread_name_prefix='img_prep')
 
 # 运行时可调参数
 _runtime_params = {
@@ -506,10 +500,41 @@ def _load_pytorch_model_full(pth_path, device):
 # ============================================================
 def _preprocess_image(image_path):
     """图像预处理（可在线程池中并行执行）"""
-    image_pil = Image.open(image_path).convert('RGB')
-    tensor = _transform(image_pil)                          # (3, 224, 224)
-    np_arr = tensor.numpy().astype(np.float32)               # (3, 224, 224) float32
-    return np_arr, image_pil
+    import os
+    import time as time_module
+    try:
+        t_start = time_module.perf_counter()
+
+        # 检查文件是否存在
+        if not os.path.exists(image_path):
+            print(f"[AI服务] ❌ 文件不存在: {image_path}")
+            raise FileNotFoundError(f"File not found: {image_path}")
+
+        # 检查文件大小
+        file_size = os.path.getsize(image_path)
+        print(
+            f"[AI服务] 📄 预处理文件: {os.path.basename(image_path)}, 大小={file_size/1024:.1f}KB")
+
+        t_open = time_module.perf_counter()
+        image_pil = Image.open(image_path).convert('RGB')
+        t_open_elapsed = time_module.perf_counter() - t_open
+        print(f"[AI服务]   → 图片加载耗时: {t_open_elapsed*1000:.1f}ms")
+
+        t_transform = time_module.perf_counter()
+        tensor = _transform(image_pil)                          # (3, 224, 224)
+        np_arr = tensor.numpy().astype(np.float32)               # (3, 224, 224) float32
+        t_transform_elapsed = time_module.perf_counter() - t_transform
+        print(f"[AI服务]   → 转换耗时: {t_transform_elapsed*1000:.1f}ms")
+
+        t_total = time_module.perf_counter() - t_start
+        print(
+            f"[AI服务] ✅ 预处理完成: {os.path.basename(image_path)} (总耗时: {t_total*1000:.1f}ms)")
+        return np_arr, image_pil
+    except Exception as e:
+        print(f"[AI服务] ❌ 预处理失败 [{image_path}]: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def _onnx_inference(np_batch):
@@ -604,12 +629,13 @@ def predict_image(image_path, target_disease=None, skip_heatmap=False):
     }
 
 
-def predict_images_batch(image_paths, skip_heatmap=True):
-    """批量图片推理（多线程预处理 + ONNX/PyTorch 批量推理）
+def predict_images_batch(image_paths, skip_heatmap=True, cancel_check=None):
+    """批量图片推理（顺序预处理 + ONNX/PyTorch 批量推理）
 
     Args:
         image_paths: 图片路径列表
         skip_heatmap: 是否跳过热力图（默认跳过以最大化速度）
+        cancel_check: 可选的取消检查函数,返回True表示需要取消
 
     Returns:
         list[dict]: 每张图片的推理结果
@@ -618,16 +644,36 @@ def predict_images_batch(image_paths, skip_heatmap=True):
     if n == 0:
         return []
 
+    print(f"[AI服务] 批量推理开始: {n} 张图片")
     t0 = time.perf_counter()
 
-    # 并行预处理所有图片
-    preprocess_results = list(
-        _preprocess_pool.map(_preprocess_image, image_paths))
+    # 预处理所有图片（顺序处理，支持取消）
+    print(f"[AI服务] 开始预处理 {n} 张图片...")
+    try:
+        preprocess_results = []
+        for idx, path in enumerate(image_paths):
+            # 检查是否需要取消
+            if cancel_check and cancel_check():
+                print(f"[AI服务] ⚠️ 检测到取消信号，停止预处理")
+                return None  # 返回None表示被取消
+
+            print(f"[AI服务] 🔄 处理第 [{idx+1}/{n}] 张...")
+            result = _preprocess_image(path)
+            preprocess_results.append(result)
+
+        print(f"[AI服务] ✅ 全部预处理完成 {len(preprocess_results)} 张图片")
+    except Exception as e:
+        print(f"[AI服务] ❌ 预处理失败: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
     np_arrays = [r[0] for r in preprocess_results]
     images_pil = [r[1] for r in preprocess_results]
     np_batch = np.stack(np_arrays, axis=0)                  # (N, 3, 224, 224)
 
     t_pre = time.perf_counter() - t0
+    print(f"[AI服务] 预处理耗时: {t_pre:.2f}s")
 
     # 批量推理
     t1 = time.perf_counter()

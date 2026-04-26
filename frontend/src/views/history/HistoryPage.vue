@@ -44,8 +44,24 @@
         </div>
       </div>
 
+      <!-- 批量操作栏 -->
+      <div class="batch-actions" v-if="selectedRows.length > 0">
+        <el-alert type="info" :closable="false" show-icon>
+          <span>已选择 <strong>{{ selectedRows.length }}</strong> 条记录</span>
+          <el-button type="danger" size="small" :loading="batchDeleting" @click="handleBatchDelete"
+            style="margin-left: 16px;">
+            批量删除
+          </el-button>
+          <el-button size="small" @click="selectedRows = []">
+            取消选择
+          </el-button>
+        </el-alert>
+      </div>
+
       <!-- 数据表格 -->
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无诊断记录" class="glass-table">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无诊断记录" class="glass-table"
+        @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="diagnosis_no" label="记录编号" width="180" show-overflow-tooltip />
         <el-table-column label="患者信息" width="160">
           <template #default="{ row }">
@@ -279,9 +295,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getDiagnosisListApi, getDiagnosisApi, deleteDiagnosisApi } from '@/api/diagnose'
 import { regenerateReportApi } from '@/api/reports'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
+const router = useRouter()
 
 // 图片路径转URL：image_path="images/abc.png" → "/static/images/abc.png"
 function imgUrl(path: string | null | undefined): string {
@@ -296,6 +315,8 @@ const detailVisible = ref(false)
 const imageVisible = ref(false)
 const currentRecord = ref<any>(null)
 const printLoadingMap = ref<Record<number, boolean>>({})
+const selectedRows = ref<any[]>([])
+const batchDeleting = ref(false)
 
 const filters = reactive({ keyword: '', result: '', status: '', dateRange: null as string[] | null })
 const pagination = reactive({ page: 1, per_page: 20, total: 0 })
@@ -446,6 +467,43 @@ async function handleDelete(row: any) {
   } catch { /* handled */ }
 }
 
+// 批量选择
+function handleSelectionChange(selection: any[]) {
+  selectedRows.value = selection
+}
+
+// 批量删除
+async function handleBatchDelete() {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请选择要删除的记录')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedRows.value.length} 条记录吗？`,
+      '批量删除',
+      { type: 'warning' }
+    )
+
+    batchDeleting.value = true
+    const ids = selectedRows.value.map(row => row.id)
+
+    // 并行删除所有选中的记录
+    await Promise.all(ids.map(id => deleteDiagnosisApi(id)))
+
+    ElMessage.success(`成功删除 ${ids.length} 条记录`)
+    selectedRows.value = []
+    fetchData()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('批量删除失败')
+    }
+  } finally {
+    batchDeleting.value = false
+  }
+}
+
 // 将图片URL转为base64（用于打印窗口跨域渲染）
 function imageToBase64(url: string): Promise<string> {
   return new Promise((resolve) => {
@@ -466,16 +524,11 @@ function imageToBase64(url: string): Promise<string> {
 
 // 从表格直接打印
 async function handlePrint(row: any) {
-  printLoadingMap.value[row.id] = true
   try {
-    // 先加载详情
-    const res: any = await getDiagnosisApi(row.id)
-    currentRecord.value = res.data
-    await printRecord(res.data)
+    // 跳转到统一打印页面（业务端路由）
+    router.push({ name: 'ReportPrint', params: { id: row.id } })
   } catch {
-    ElMessage.error('打印失败，请重试')
-  } finally {
-    printLoadingMap.value[row.id] = false
+    ElMessage.error('跳转打印页面失败')
   }
 }
 
@@ -483,7 +536,8 @@ async function handlePrint(row: any) {
 function handlePrintReport() {
   const r = currentRecord.value
   if (!r) return
-  printRecord(r)
+  // 跳转到统一打印页面（业务端路由）
+  router.push({ name: 'ReportPrint', params: { id: r.id } })
 }
 
 // 核心打印逻辑
@@ -1371,6 +1425,29 @@ onMounted(() => fetchData())
   &:hover {
     background: transparent !important;
     opacity: 0.8;
+  }
+}
+
+/* 批量操作栏 */
+.batch-actions {
+  margin-bottom: 16px;
+
+  .el-alert {
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+
+    .el-alert__content {
+      display: flex;
+      align-items: center;
+      width: 100%;
+
+      strong {
+        color: var(--primary);
+        font-size: 16px;
+      }
+    }
   }
 }
 </style>

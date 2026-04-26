@@ -128,7 +128,7 @@ const capturedFaceImage = ref<string>('')  // 识别成功的人脸截图
 // 连续识别计数器
 const consecutiveFailures = ref(0)
 const consecutiveSuccesses = ref(0)
-const SUCCESS_THRESHOLD = 2  // 连续成功 2 次才确认
+const SUCCESS_THRESHOLD = 1  // 识别成功 1 次即确认
 const FAILURE_THRESHOLD = 5  // 连续失败 5 次提示用户
 
 let stream: MediaStream | null = null
@@ -310,10 +310,14 @@ async function captureAndRecognize() {
                     capturedFaceImage.value = `data:image/jpeg;base64,${result.data.face_image}`
                 }
 
+                // ✅ 先关闭摄像头，再显示成功界面
+                stopCamera()
+                console.log('[FaceLogin] 识别成功，已关闭摄像头')
+
                 status.value = 'success'
                 ElMessage.success(`识别成功：${result.data.name}`)
 
-                // 延迟后自动登录（登录函数会关闭摄像头）
+                // 延迟后自动登录
                 setTimeout(() => {
                     handleLoginSuccess(result.data)
                 }, 1500)
@@ -437,9 +441,7 @@ function drawFaceBox(bbox: number[], isSuccess: boolean) {
 // 处理登录成功
 async function handleLoginSuccess(patientData: any) {
     try {
-        // 识别成功后立即关闭摄像头，释放资源
-        stopCamera()
-        console.log('[FaceLogin] 识别成功，已关闭摄像头')
+        // 摄像头已在识别成功时关闭
 
         await authStore.patientLogin(patientData.patient_no, 'face_recognition')
         ElMessage.success('登录成功')
@@ -529,8 +531,9 @@ onBeforeUnmount(() => {
     aspect-ratio: 4 / 3;
     border-radius: 16px;
     overflow: hidden;
-    background: #000;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    background: #F0F7FF;
+    /* 左右对称阴影 */
+    box-shadow: -12px 0 24px rgba(59, 130, 246, 0.1), 12px 0 24px rgba(59, 130, 246, 0.1), 0 8px 32px rgba(59, 130, 246, 0.15);
 }
 
 /* 初始占位符 */
@@ -545,20 +548,21 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     gap: 16px;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    /* 使用 CSS 变量支持主题切换，默认浅蓝色渐变 */
+    background: var(--bg-secondary, linear-gradient(135deg, #f0f7ff 0%, #e6f0fa 100%));
     z-index: 1;
 }
 
 .placeholder-text {
     font-size: 20px;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-primary, #1e293b);
     margin: 0;
 }
 
 .placeholder-hint {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary, #64748b);
     margin: 0;
 }
 
@@ -718,8 +722,7 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    /* 只在识别时显示深色背景 */
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(4px);
     z-index: 10;
 }
@@ -735,8 +738,8 @@ canvas {
 
 .guidance-text {
     text-align: center;
-    color: #fff;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    color: #1F2937;
+    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8);
 }
 
 .guidance-text p {
@@ -755,7 +758,7 @@ canvas {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(31, 41, 55, 0.3);
     transition: all 0.3s ease;
 }
 

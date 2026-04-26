@@ -17,8 +17,53 @@
       </div>
 
       <nav class="sidebar-nav">
-        <div class="nav-section-label" v-if="!appStore.sidebarCollapsed">业务端</div>
-        <router-link v-for="item in businessMenus" :key="item.path" :to="item.path" class="nav-item"
+        <!-- 分类 1: 工作台 -->
+        <div class="nav-category" v-if="!appStore.sidebarCollapsed">
+          <span class="category-label">工作台</span>
+        </div>
+        <router-link v-for="item in workbenchMenus" :key="item.path" :to="item.path" class="nav-item"
+          :class="{ active: isActive(item.path) }">
+          <div class="nav-icon"><el-icon :size="18">
+              <component :is="item.icon" />
+            </el-icon></div>
+          <transition name="fade">
+            <span v-if="!appStore.sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+          </transition>
+        </router-link>
+
+        <!-- 分类 2: 诊断管理 -->
+        <div class="nav-category" v-if="!appStore.sidebarCollapsed">
+          <span class="category-label">诊断管理</span>
+        </div>
+        <router-link v-for="item in diagnosisMenus" :key="item.path" :to="item.path" class="nav-item"
+          :class="{ active: isActive(item.path) }">
+          <div class="nav-icon"><el-icon :size="18">
+              <component :is="item.icon" />
+            </el-icon></div>
+          <transition name="fade">
+            <span v-if="!appStore.sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+          </transition>
+        </router-link>
+
+        <!-- 分类 3: 报告管理 -->
+        <div class="nav-category" v-if="!appStore.sidebarCollapsed">
+          <span class="category-label">报告管理</span>
+        </div>
+        <router-link v-for="item in reportMenus" :key="item.path" :to="item.path" class="nav-item"
+          :class="{ active: isActive(item.path) }">
+          <div class="nav-icon"><el-icon :size="18">
+              <component :is="item.icon" />
+            </el-icon></div>
+          <transition name="fade">
+            <span v-if="!appStore.sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+          </transition>
+        </router-link>
+
+        <!-- 分类 4: 智能服务 -->
+        <div class="nav-category" v-if="!appStore.sidebarCollapsed">
+          <span class="category-label">智能服务</span>
+        </div>
+        <router-link v-for="item in serviceMenus" :key="item.path" :to="item.path" class="nav-item"
           :class="{ active: isActive(item.path) }">
           <div class="nav-icon"><el-icon :size="18">
               <component :is="item.icon" />
@@ -30,7 +75,9 @@
 
         <template v-if="authStore.isAdmin">
           <div class="nav-divider"></div>
-          <div class="nav-section-label" v-if="!appStore.sidebarCollapsed">管理端</div>
+          <div class="nav-category" v-if="!appStore.sidebarCollapsed">
+            <span class="category-label">管理端</span>
+          </div>
           <router-link to="/admin/overview" class="nav-item" :class="{ active: isAdminActive }">
             <div class="nav-icon"><el-icon :size="18">
                 <Setting />
@@ -40,6 +87,9 @@
             </transition>
           </router-link>
         </template>
+
+        <!-- 底部占位，确保内容不会太紧凑 -->
+        <div class="nav-spacer"></div>
       </nav>
 
       <!-- 侧边栏底部 -->
@@ -129,7 +179,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Fold, Expand, ArrowDown, Setting, Bell, User, Lock, SwitchButton,
-  DataBoard, FirstAidKit, Compass, ChatDotRound, Clock, Files, Stamp, Edit, Moon, Sunny,
+  DataBoard, FirstAidKit, Compass, ChatDotRound, Clock, Files, Stamp, Edit, Moon, Sunny, DocumentCopy,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
@@ -147,7 +197,6 @@ const pendingCount = ref(0)
 const businessMenus = [
   { path: '/staff/dashboard', label: '数据看板', icon: DataBoard },
   { path: '/staff/diagnose', label: '诊断中心', icon: FirstAidKit },
-  { path: '/staff/batch', label: '批量诊断', icon: Files },
   { path: '/staff/triage', label: '智能分诊', icon: Compass },
   { path: '/staff/chat', label: 'AI咨询', icon: ChatDotRound },
   { path: '/staff/history', label: '诊断历史', icon: Clock },
@@ -155,10 +204,34 @@ const businessMenus = [
   { path: '/staff/revise', label: '诊断修正', icon: Edit },
 ]
 
+// 分类菜单：工作台
+const workbenchMenus = [
+  { path: '/staff/dashboard', label: '数据看板', icon: DataBoard },
+]
+
+// 分类菜单：诊断管理
+const diagnosisMenus = [
+  { path: '/staff/diagnose', label: '诊断中心', icon: FirstAidKit },
+  { path: '/staff/batch-diagnose', label: '批量诊断', icon: DocumentCopy },
+]
+
+// 分类菜单：报告管理
+const reportMenus = [
+  { path: '/staff/history', label: '诊断历史', icon: Clock },
+  { path: '/staff/approval', label: '诊断审批', icon: Stamp },
+  { path: '/staff/revise', label: '诊断修正', icon: Edit },
+]
+
+// 分类菜单：智能服务
+const serviceMenus = [
+  { path: '/staff/triage', label: '智能分诊', icon: Compass },
+  { path: '/staff/chat', label: 'AI咨询', icon: ChatDotRound },
+]
+
 const currentTitle = computed(() => (route.meta.title as string) || '')
 const titleEnMap: Record<string, string> = {
   '数据看板': 'Dashboard', '诊断中心': 'Diagnose', '智能分诊': 'Smart Triage',
-  'AI咨询': 'AI Chat', '诊断历史': 'Records', '批量诊断': 'Batch',
+  'AI咨询': 'AI Chat', '诊断历史': 'Records',
   '诊断审批': 'Approval', '诊断修正': 'Revise',
 }
 const currentTitleEn = computed(() => titleEnMap[currentTitle.value] || currentTitle.value)
@@ -214,10 +287,19 @@ async function handleChangePassword() {
 }
 
 onMounted(async () => {
+  // ⚠️ 关键修复：等待Token完全生效
+  const token = localStorage.getItem('token')
+  if (!token) {
+    console.warn('[MainLayout] Token未找到，等待200ms后重试...')
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+
   try {
     const res: any = await getDashboardStatsApi()
     pendingCount.value = res.data?.pending_count || 0
-  } catch { /* ok */ }
+  } catch (err) {
+    console.error('[MainLayout] 数据加载失败:', err)
+  }
 })
 </script>
 
@@ -294,13 +376,30 @@ onMounted(async () => {
   overflow-x: hidden;
 }
 
-.nav-section-label {
+/* 分类标签 */
+.nav-category {
+  padding: 12px 14px 6px;
+  position: relative;
+}
+
+.nav-category::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+}
+
+.category-label {
   font-size: 11px;
   color: var(--text-muted);
-  padding: 16px 14px 6px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  white-space: nowrap;
+  font-weight: 600;
+  display: block;
+  padding-left: 4px;
 }
 
 .nav-item {
@@ -333,9 +432,15 @@ onMounted(async () => {
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 20px;
-  background: var(--sidebar-active-border);
-  border-radius: 0 3px 3px 0;
+  height: 60%;
+  background: var(--primary);
+  border-radius: 0 2px 2px 0;
+}
+
+/* 底部占位 */
+.nav-spacer {
+  flex: 1;
+  min-height: 20px;
 }
 
 .nav-icon {

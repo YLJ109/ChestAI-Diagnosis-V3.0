@@ -5,7 +5,6 @@ from extensions import db
 from models.diagnosis import Diagnosis, DiseaseProbability
 from models.report import Report
 from models.user import User
-from models.batch import BatchRecord
 from models.audit import AuditLog
 from utils.auth import token_required, role_required
 
@@ -21,13 +20,16 @@ def get_stats():
     month_start = datetime.combine(today.replace(day=1), datetime.min.time())
 
     # 今日诊断数
-    today_count = Diagnosis.query.filter(Diagnosis.created_at >= today_start).count()
+    today_count = Diagnosis.query.filter(
+        Diagnosis.created_at >= today_start).count()
 
     # 本月累计诊断数
-    month_count = Diagnosis.query.filter(Diagnosis.created_at >= month_start).count()
+    month_count = Diagnosis.query.filter(
+        Diagnosis.created_at >= month_start).count()
 
     # 待审核报告数
-    pending_count = Diagnosis.query.filter_by(report_status='pending_review').count()
+    pending_count = Diagnosis.query.filter_by(
+        report_status='pending_review').count()
 
     # 高危病例数（任一疾病概率>0.7）
     high_risk_count = db.session.query(db.func.count(db.distinct(DiseaseProbability.diagnosis_id)))\
@@ -148,7 +150,8 @@ def get_system_overview():
     # 诊断统计
     total_diagnoses = Diagnosis.query.count()
     today_diagnoses = Diagnosis.query.filter(
-        Diagnosis.created_at >= datetime.combine(datetime.now().date(), datetime.min.time())
+        Diagnosis.created_at >= datetime.combine(
+            datetime.now().date(), datetime.min.time())
     ).count()
 
     # 模型信息

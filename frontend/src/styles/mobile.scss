@@ -1,0 +1,198 @@
+/**
+ * 移动端通用样式变量和Mixin
+ * 用于统一移动端页面的视觉风格
+ */
+
+// ===== 颜色系统 =====
+$mobile-primary: #0EA5E9; // 主色(天蓝)
+$mobile-secondary: #06B6D4; // 辅色(青蓝)
+$mobile-success: #10B981; // 成功(绿)
+$mobile-warning: #F59E0B; // 警告(橙)
+$mobile-danger: #EF4444; // 危险(红)
+$mobile-bg: #f5f7fa; // 背景色
+$mobile-card-bg: #ffffff; // 卡片背景
+$mobile-text: #1F2937; // 主要文字
+$mobile-text-secondary: #6B7280; // 次要文字
+$mobile-border: #E5E7EB; // 边框色
+
+// ===== 间距规范 =====
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// ===== 字体规范 =====
+$text-xs: 12px;
+$text-sm: 14px;
+$text-md: 16px;
+$text-lg: 18px;
+$text-xl: 20px;
+$text-xxl: 24px;
+
+// ===== 圆角规范 =====
+$radius-sm: 8px;
+$radius-md: 12px;
+$radius-lg: 16px;
+$radius-xl: 20px;
+$radius-full: 9999px;
+
+// ===== 阴影 =====
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+// ===== Mixins =====
+
+// 通用卡片样式
+@mixin mobile-card {
+    background: $mobile-card-bg;
+    border-radius: $radius-lg;
+    padding: $spacing-md;
+    margin-bottom: $spacing-md;
+    box-shadow: $shadow-sm;
+}
+
+// 通用按钮样式(触摸友好)
+@mixin mobile-btn {
+    min-height: 48px;
+    font-size: $text-md;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+
+    &:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+}
+
+// 列表项样式
+@mixin mobile-list-item {
+    padding: $spacing-md;
+    border-bottom: 1px solid $mobile-border;
+    transition: background-color 0.2s ease;
+
+    &:active {
+        background: #F3F4F6;
+    }
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+// 渐变背景
+@mixin gradient-primary {
+    background: linear-gradient(135deg, $mobile-primary, $mobile-secondary);
+}
+
+// 玻璃态效果
+@mixin glass-effect {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+// 文本截断
+@mixin text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// 多行文本截断
+@mixin text-clamp($lines: 2) {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+// 安全区域适配
+@mixin safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+}
+
+@mixin safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+// ===== 通用类 =====
+
+// 加载状态
+.mobile-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: $spacing-md;
+
+    .loading-text {
+        font-size: $text-sm;
+        color: $mobile-text-secondary;
+    }
+}
+
+// 空状态
+.mobile-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: $spacing-md;
+    padding: $spacing-xl $spacing-md;
+    text-align: center;
+
+    .empty-text {
+        font-size: $text-md;
+        color: $mobile-text-secondary;
+    }
+}
+
+// 登录引导
+.mobile-login-guide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: $spacing-xl $spacing-md;
+    text-align: center;
+
+    .guide-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: $radius-full;
+        @include gradient-primary;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-bottom: $spacing-lg;
+    }
+
+    .guide-title {
+        font-size: $text-xl;
+        font-weight: 700;
+        color: $mobile-text;
+        margin: 0 0 $spacing-sm 0;
+    }
+
+    .guide-desc {
+        font-size: $text-sm;
+        color: $mobile-text-secondary;
+        margin: 0 0 $spacing-xl 0;
+        line-height: 1.6;
+    }
+
+    .guide-btn {
+        width: 100%;
+        max-width: 300px;
+        @include mobile-btn;
+    }
+}

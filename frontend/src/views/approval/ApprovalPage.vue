@@ -50,8 +50,24 @@
         </div>
       </div>
 
+      <!-- 批量操作栏 -->
+      <div class="batch-actions" v-if="selectedRows.length > 0">
+        <el-alert type="info" :closable="false" show-icon>
+          <span>已选择 <strong>{{ selectedRows.length }}</strong> 条记录</span>
+          <el-button type="success" size="small" :loading="batchProcessing" @click="handleBatchApprove"
+            style="margin-left: 16px;">
+            批量通过
+          </el-button>
+          <el-button size="small" @click="selectedRows = []">
+            取消选择
+          </el-button>
+        </el-alert>
+      </div>
+
       <!-- 数据表格 -->
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无审批记录" class="glass-table" @row-click="openDetail">
+      <el-table :data="tableData" v-loading="loading" empty-text="暂无审批记录" class="glass-table" @row-click="openDetail"
+        @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column label="患者" width="80">
           <template #default="{ row }">
             <span class="patient-name">{{ row.patient_name || '-' }}</span>
@@ -251,7 +267,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Document } from '@element-plus/icons-vue'
 import {
   getApprovalsApi, getApprovalApi, approveApprovalApi,
@@ -265,6 +281,8 @@ const loading = ref(false)
 const submitting = ref(false)
 const syncing = ref(false)
 const tableData = ref<any[]>([])
+const selectedRows = ref<any[]>([])
+const batchProcessing = ref(false)
 const detailVisible = ref(false)
 const reviewVisible = ref(false)
 const currentDetail = ref<any>(null)
@@ -478,6 +496,16 @@ async function handleReview() {
 
 function search() { pagination.page = 1; fetchData() }
 function resetFilters() { filters.keyword = ''; filters.status = ''; filters.priority = ''; search() }
+
+// 批量选择
+function handleSelectionChange(selection: any[]) {
+  selectedRows.value = selection
+}
+
+// 批量审批（占位）
+async function handleBatchApprove() {
+  ElMessage.info('批量审批功能开发中...')
+}
 
 async function handleSyncMissing() {
   syncing.value = true

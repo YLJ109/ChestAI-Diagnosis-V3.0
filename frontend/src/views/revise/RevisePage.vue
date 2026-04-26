@@ -1,4 +1,3 @@
-/** 诊断修正页面 - 处理被退回和需要修正的AI报告 */
 <template>
     <div class="revise-page">
         <!-- 统计卡片 -->
@@ -49,9 +48,24 @@
                 </div>
             </div>
 
+            <!-- 批量操作栏 -->
+            <div class="batch-actions" v-if="selectedRows.length > 0">
+                <el-alert type="info" :closable="false" show-icon>
+                    <span>已选择 <strong>{{ selectedRows.length }}</strong> 条记录</span>
+                    <el-button type="primary" size="small" :loading="batchProcessing" @click="handleBatchRevise"
+                        style="margin-left: 16px;">
+                        批量修正
+                    </el-button>
+                    <el-button size="small" @click="selectedRows = []">
+                        取消选择
+                    </el-button>
+                </el-alert>
+            </div>
+
             <!-- 数据表格 -->
             <el-table :data="tableData" v-loading="loading" empty-text="暂无待修改记录" class="glass-table"
-                @row-click="openDetail">
+                @row-click="openDetail" @selection-change="handleSelectionChange">
+                <el-table-column type="selection" width="55" />
                 <el-table-column label="患者" width="110">
                     <template #default="{ row }">
                         <div class="patient-info">
@@ -189,7 +203,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Edit, Check, WarningFilled } from '@element-plus/icons-vue'
 import http from '@/api/index'
 
@@ -217,6 +231,8 @@ const loading = ref(false)
 const submitting = ref(false)
 const regenerating = ref(false)
 const tableData = ref<ApprovalItem[]>([])
+const selectedRows = ref<ApprovalItem[]>([])
+const batchProcessing = ref(false)
 const showReviseDialog = ref(false)
 const currentApproval = ref<ApprovalItem | null>(null)
 const aiReportContent = ref('')
@@ -316,6 +332,16 @@ function resetFilters() {
     filters.status = ''
     pagination.page = 1
     fetchList()
+}
+
+// 批量选择
+function handleSelectionChange(selection: ApprovalItem[]) {
+    selectedRows.value = selection
+}
+
+// 批量修正（占位）
+async function handleBatchRevise() {
+    ElMessage.info('批量修正功能开发中...')
 }
 
 // 按状态筛选

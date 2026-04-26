@@ -18,8 +18,15 @@ function applyTheme(theme: 'light' | 'dark') {
   localStorage.setItem('theme', theme)
 }
 
+// 监听主题变化事件
+window.addEventListener('storage', (e) => {
+  if (e.key === 'theme' && e.newValue) {
+    applyTheme(e.newValue as 'light' | 'dark')
+  }
+})
+
 onMounted(() => {
-  // 只在首次加载时应用保存的主题
+  // 每次挂载时都从 localStorage 读取最新主题
   const stored = localStorage.getItem('theme') as 'light' | 'dark' | null
   if (stored) {
     applyTheme(stored)

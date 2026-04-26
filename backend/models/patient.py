@@ -58,4 +58,5 @@ class Patient(db.Model):
             'created_by': self.created_by,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'has_face': self.face_descriptor is not None,  # 是否已录入人脸
+            'face_image_path': self.face_image_path,  # 人脸照片路径
         }

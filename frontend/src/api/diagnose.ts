@@ -15,3 +15,7 @@ export const getDiagnosisListApi = (params?: any) =>
 
 export const deleteDiagnosisApi = (id: number) =>
   http.delete(`/diagnose/${id}`)
+
+/** 获取统一打印数据 */
+export const getPrintDataApi = (diagnosisId: number) =>
+  http.get(`/diagnose/${diagnosisId}/print`)

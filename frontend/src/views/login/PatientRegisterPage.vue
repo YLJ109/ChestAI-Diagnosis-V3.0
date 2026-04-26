@@ -134,6 +134,7 @@ import { ElMessage } from 'element-plus'
 import { Monitor, ArrowLeft, InfoFilled, Ticket, User, Male, Female, Phone, CircleCheck } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { patientRegisterApi } from '@/api/auth'
+import { sanitizeInput, validatePhone } from '@/utils/xss'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -167,6 +168,21 @@ const rules: FormRules = {
 async function handleSubmit() {
     const valid = await formRef.value?.validate().catch(() => false)
     if (!valid) return
+
+    // XSS防护: 清理输入数据
+    try {
+        form.name = sanitizeInput(form.name, { maxLength: 20 })
+        form.patient_no = sanitizeInput(form.patient_no, { maxLength: 50 })
+
+        // 验证手机号
+        if (form.phone && !validatePhone(form.phone)) {
+            ElMessage.error('请输入有效的手机号')
+            return
+        }
+    } catch (error: any) {
+        ElMessage.error(error.message || '输入内容不合法')
+        return
+    }
 
     submitting.value = true
     try {
@@ -410,6 +426,67 @@ function goBack() {
 
     .brand-section {
         display: none;
+    }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .patient-register-page {
+        min-height: 100vh;
+    }
+
+    .terminal-header {
+        padding: 12px 16px;
+    }
+
+    .header-title {
+        font-size: 16px;
+    }
+
+    .register-main {
+        padding: 16px;
+    }
+
+    .form-card {
+        max-width: 100%;
+        padding: 24px 20px;
+        border-radius: 16px;
+    }
+
+    .form-title {
+        font-size: 20px;
+        margin-bottom: 24px;
+    }
+
+    :deep(.el-form-item__label) {
+        font-size: 14px;
+    }
+
+    :deep(.el-input),
+    :deep(.el-input-number) {
+        --el-input-height: 44px;
+    }
+
+    .gender-group {
+        gap: 12px;
+
+        :deep(.el-radio) {
+            padding: 10px 12px;
+        }
+    }
+
+    .submit-btn {
+        height: 48px;
+        font-size: 16px;
+    }
+
+    .info-tips {
+        padding: 16px;
+        margin-top: 24px;
+
+        .tips-content p {
+            font-size: 13px;
+        }
     }
 }
 </style>

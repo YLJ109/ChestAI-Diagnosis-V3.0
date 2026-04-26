@@ -8,7 +8,8 @@ from utils.auth import token_required, role_required
 from utils.encryption import encrypt_value, decrypt_value
 from openai import OpenAI
 
-llm_configs_bp = Blueprint('llm_configs', __name__, url_prefix='/api/v1/llm-configs')
+llm_configs_bp = Blueprint('llm_configs', __name__,
+                           url_prefix='/api/v1/llm-configs')
 
 
 @llm_configs_bp.route('/', methods=['GET'])
@@ -42,7 +43,8 @@ def create_config():
         provider=data.get('provider', ''),
         api_endpoint=data.get('api_endpoint', ''),
         api_key_encrypted=encrypt_value(data.get('api_key', '')),
-        default_params=json.dumps(data.get('default_params', {}), ensure_ascii=False),
+        default_params=json.dumps(
+            data.get('default_params', {}), ensure_ascii=False),
         is_default=data.get('is_default', False),
         priority=data.get('priority', 1),
         status=data.get('status', 'active'),
@@ -51,10 +53,12 @@ def create_config():
 
     # 如果设为默认，取消其他默认
     if config.is_default:
-        LlmConfig.query.filter(LlmConfig.id != config.id).update({'is_default': False})
+        LlmConfig.query.filter(LlmConfig.id != config.id).update(
+            {'is_default': False})
 
     db.session.commit()
-    _log_audit(request.current_user_id, 'CREATE_LLM_CONFIG', 'llm_config', config.id)
+    _log_audit(request.current_user_id,
+               'CREATE_LLM_CONFIG', 'llm_config', config.id)
     return jsonify({'code': 200, 'data': config.to_dict()})
 
 
@@ -73,10 +77,12 @@ def update_config(config_id):
     if 'api_key' in data:
         config.api_key_encrypted = encrypt_value(data['api_key'])
     if 'default_params' in data:
-        config.default_params = json.dumps(data['default_params'], ensure_ascii=False)
+        config.default_params = json.dumps(
+            data['default_params'], ensure_ascii=False)
     if 'is_default' in data:
         if data['is_default']:
-            LlmConfig.query.filter(LlmConfig.id != config_id).update({'is_default': False})
+            LlmConfig.query.filter(LlmConfig.id != config_id).update(
+                {'is_default': False})
         config.is_default = data['is_default']
     if 'priority' in data:
         config.priority = data['priority']
@@ -84,7 +90,13 @@ def update_config(config_id):
         config.status = data['status']
 
     db.session.commit()
-    _log_audit(request.current_user_id, 'UPDATE_LLM_CONFIG', 'llm_config', config_id)
+
+    # ⚠️ P0-6: 清除LLM缓存，确保配置变更立即生效
+    from services.llm_service import _clear_llm_cache
+    _clear_llm_cache()
+
+    _log_audit(request.current_user_id,
+               'UPDATE_LLM_CONFIG', 'llm_config', config_id)
     return jsonify({'code': 200, 'data': config.to_dict()})
 
 
@@ -98,7 +110,13 @@ def delete_config(config_id):
         return jsonify({'code': 400, 'message': '不能删除默认模型配置'}), 400
     db.session.delete(config)
     db.session.commit()
-    _log_audit(request.current_user_id, 'DELETE_LLM_CONFIG', 'llm_config', config_id)
+
+    # ⚠️ P0-6: 清除LLM缓存
+    from services.llm_service import _clear_llm_cache
+    _clear_llm_cache()
+
+    _log_audit(request.current_user_id,
+               'DELETE_LLM_CONFIG', 'llm_config', config_id)
     return jsonify({'code': 200, 'message': '配置已删除'})
 
 

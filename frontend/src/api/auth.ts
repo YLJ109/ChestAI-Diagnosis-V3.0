@@ -7,6 +7,17 @@ export const loginApi = (data: { username: string; password: string }) =>
 export const patientLoginApi = (data: { patient_no: string; login_method?: string }) =>
   http.post('/auth/patient-login', data)
 
+export const staffLoginApi = (data: { username: string; password?: string; login_method?: string }) =>
+  http.post('/auth/login', data)
+
+export const staffFaceLoginApi = (data: {
+  user_id: number
+  username: string
+  real_name?: string
+  role?: string
+  department?: string
+}) => http.post('/auth/staff-face-login', data)
+
 export const registerApi = (data: any) =>
   http.post('/auth/register', data)
 
@@ -27,6 +38,9 @@ export const updateProfileApi = (data: any) =>
 
 export const getPatientQrcodeApi = (patientId: number) =>
   http.get(`/auth/patient-qrcode/${patientId}`)
+
+export const getStaffQrcodeApi = (userId: number) =>
+  http.get(`/auth/staff-qrcode/${userId}`)
 
 export const patientQrcodeLoginApi = (patientNo: string) =>
   http.post('/auth/patient-login', { patient_no: patientNo, login_method: 'qrcode' })

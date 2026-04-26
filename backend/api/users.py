@@ -32,7 +32,16 @@ def get_users():
                    User.real_name.like(f'%{keyword}%'))
         )
 
-    query = query.order_by(User.created_at.desc())
+    # 按角色排序：管理员优先，然后医生，最后护士
+    # 使用 CASE WHEN 实现自定义排序
+    from sqlalchemy import case
+    role_order = case(
+        (User.role == 'admin', 1),
+        (User.role == 'doctor', 2),
+        (User.role == 'nurse', 3),
+        else_=4
+    )
+    query = query.order_by(role_order, User.id.asc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     return jsonify({

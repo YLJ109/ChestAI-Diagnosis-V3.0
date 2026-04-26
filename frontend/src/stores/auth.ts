@@ -1,7 +1,7 @@
 /** 认证状态管理 */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { loginApi, patientLoginApi, getCurrentUserApi } from '@/api/auth'
+import { loginApi, patientLoginApi, staffLoginApi, staffFaceLoginApi, getCurrentUserApi } from '@/api/auth'
 
 function applyTheme(theme: string) {
   const html = document.documentElement
@@ -33,10 +33,17 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = res.data.token
     user.value = res.data.user
     theme.value = res.data.theme || 'dark'
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
-    localStorage.setItem('theme', theme.value)
-    applyTheme(theme.value)
+
+    // ⚠️ 关键修复：使用 Promise 确保 localStorage 写入完成
+    await new Promise<void>((resolve) => {
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      localStorage.setItem('theme', theme.value)
+      applyTheme(theme.value)
+
+      // 等待下一个事件循环，确保写入完成
+      setTimeout(() => resolve(), 50)
+    })
   }
 
   async function patientLogin(patientNo: string, loginMethod = 'patient_no') {
@@ -45,6 +52,36 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = res.data.user
     localStorage.setItem('token', res.data.token)
     localStorage.setItem('user', JSON.stringify(res.data.user))
+  }
+
+  async function staffLogin(username: string, loginMethod = 'password') {
+    // 医护人员使用普通登录接口，但标记为刷脸登录
+    const res: any = await staffLoginApi({ username, password: '', login_method: loginMethod })
+    token.value = res.data.token
+    user.value = res.data.user
+    theme.value = res.data.theme || 'dark'
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    localStorage.setItem('theme', theme.value)
+    applyTheme(theme.value)
+  }
+
+  async function staffFaceLogin(userData: {
+    user_id: number
+    username: string
+    real_name?: string
+    role?: string
+    department?: string
+  }) {
+    // 医护人员刷脸登录（无需密码）
+    const res: any = await staffFaceLoginApi(userData)
+    token.value = res.data.token
+    user.value = res.data.user
+    theme.value = res.data.theme || 'light'
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    localStorage.setItem('theme', theme.value)
+    applyTheme(theme.value)
   }
 
   async function fetchUser() {
@@ -76,10 +113,15 @@ export const useAuthStore = defineStore('auth', () => {
     if (savedUser) {
       try { user.value = JSON.parse(savedUser) } catch { /* ignore */ }
     }
+    // 从 localStorage 读取最新主题并应用
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme) {
+      theme.value = savedTheme
+    }
     applyTheme(theme.value)
   }
 
   init()
 
-  return { token, user, theme, isLoggedIn, userRole, isAdmin, isDoctor, isNurse, isPatient, login, patientLogin, fetchUser, logout, setTheme }
+  return { token, user, theme, isLoggedIn, userRole, isAdmin, isDoctor, isNurse, isPatient, login, patientLogin, staffLogin, staffFaceLogin, fetchUser, logout, setTheme }
 })

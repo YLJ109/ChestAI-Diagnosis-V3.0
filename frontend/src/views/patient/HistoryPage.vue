@@ -625,6 +625,7 @@ function getImageUrl(path: string): string {
 
 .timeline-actions :deep(.el-button) {
     color: #FFFFFF !important;
+    padding: 10px;
 }
 
 /* ===== 详情对话框样式 - 现代医疗风格 ===== */

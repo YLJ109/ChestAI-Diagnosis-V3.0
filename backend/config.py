@@ -2,13 +2,17 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
+load_dotenv(os.path.join(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))), '.env'))
 
 
 class Config:
     """基础配置"""
-    SECRET_KEY = os.getenv('SECRET_KEY', 'aixray-default-secret-key')
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'aixray-default-jwt-secret')
+    # ⚠️ P0-8: JWT密钥长度至少32字节，满足SHA256安全要求（RFC 7518 Section 3.2）
+    SECRET_KEY = os.getenv(
+        'SECRET_KEY', 'aixray-default-secret-key-change-in-production')
+    JWT_SECRET_KEY = os.getenv(
+        'JWT_SECRET_KEY', 'aixray-jwt-secret-key-must-be-at-least-32-bytes-long!')
     JWT_ACCESS_TOKEN_EXPIRES = 2592000  # 30天（秒）
 
     # SQLite数据库
@@ -30,8 +34,10 @@ class Config:
 
     # LLM配置
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
-    OPENAI_API_BASE = os.getenv('OPENAI_API_BASE', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
-    LLM_ENCRYPTION_KEY = os.getenv('LLM_ENCRYPTION_KEY', 'aixray-llm-encryption-secret-key-2026')
+    OPENAI_API_BASE = os.getenv(
+        'OPENAI_API_BASE', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
+    LLM_ENCRYPTION_KEY = os.getenv(
+        'LLM_ENCRYPTION_KEY', 'aixray-llm-encryption-secret-key-2026')
 
     # 诊断阈值
     DISEASE_THRESHOLD = 0.7

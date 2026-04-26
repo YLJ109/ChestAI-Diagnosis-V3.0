@@ -171,7 +171,7 @@
               <p class="number-help">不知道编号？请联系前台工作人员或查看您的就诊卡</p>
               <div class="register-link">
                 <span>还没有患者编号？</span>
-                <el-button text type="primary" @click="goToRegister">
+                <el-button text @click="goToRegister" class="register-btn">
                   立即注册
                 </el-button>
               </div>
@@ -211,6 +211,18 @@ import FaceLoginPage from '@/views/patient/FaceLoginPage.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// 强制患者端使用浅色主题
+onMounted(() => {
+  document.documentElement.setAttribute('data-theme', 'light')
+  document.documentElement.classList.remove('dark')
+  document.documentElement.classList.add('light')
+  // 注意：不再清除 localStorage 中的 theme 设置，避免影响其他模块
+})
+
+onUnmounted(() => {
+  // 离开患者登录页时不做处理,让其他页面自行管理主题
+})
 
 // ========== 时钟 ==========
 const currentTime = ref('')
@@ -416,15 +428,15 @@ function goToRegister() {
   overflow: hidden;
 }
 
-/* ===== 顶部终端栏 ===== */
+/* ===== 顶部终端栏 - 浅色主题 ===== */
 .terminal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 28px;
-  background: rgba(15, 23, 42, 0.85);
-  border-bottom: 1px solid var(--glass-border);
-  backdrop-filter: blur(12px);
+  background: #FFFFFF;
+  border-bottom: 2px solid #E5E7EB;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   z-index: 10;
 }
 
@@ -1037,10 +1049,21 @@ function goToRegister() {
     color: #94a3b8;
   }
 
-  .el-button {
-    padding: 4px 12px;
-    font-size: 14px;
-    font-weight: 600;
+  .el-button,
+  .register-btn {
+    padding: 4px 12px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    background: #FFFFFF !important;
+    color: #3B82F6 !important;
+    border: 1px solid #3B82F6 !important;
+  }
+
+  .el-button:hover,
+  .register-btn:hover {
+    background: #3B82F6 !important;
+    color: #FFFFFF !important;
+    border-color: #3B82F6 !important;
   }
 }
 
@@ -1050,10 +1073,10 @@ function goToRegister() {
   align-items: center;
   justify-content: space-between;
   padding: 10px 28px;
-  background: rgba(15, 23, 42, 0.7);
-  border-top: 1px solid var(--glass-border);
+  background: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
   font-size: 12px;
-  color: var(--text-muted);
+  color: #6B7280;
 }
 
 .footer-left {

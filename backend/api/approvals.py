@@ -14,6 +14,7 @@ approvals_bp = Blueprint('approvals', __name__, url_prefix='/api/v1/approvals')
 
 @approvals_bp.route('/', methods=['GET'])
 @token_required
+@role_required('admin', 'doctor')  # ⚠️ P1-1: 添加权限控制
 def get_approvals():
     """获取审批列表"""
     page = request.args.get('page', 1, type=int)
@@ -52,9 +53,12 @@ def get_approvals():
     submitter_ids = list(set(a.submitter_id for a in items if a.submitter_id))
     diagnosis_ids = list(set(a.diagnosis_id for a in items))
 
-    patients_map = {p.id: p for p in Patient.query.filter(Patient.id.in_(patient_ids)).all()} if patient_ids else {}
-    users_map = {u.id: u for u in User.query.filter(User.id.in_(submitter_ids)).all()} if submitter_ids else {}
-    diagnoses_map = {d.id: d for d in Diagnosis.query.filter(Diagnosis.id.in_(diagnosis_ids)).all()} if diagnosis_ids else {}
+    patients_map = {p.id: p for p in Patient.query.filter(
+        Patient.id.in_(patient_ids)).all()} if patient_ids else {}
+    users_map = {u.id: u for u in User.query.filter(
+        User.id.in_(submitter_ids)).all()} if submitter_ids else {}
+    diagnoses_map = {d.id: d for d in Diagnosis.query.filter(
+        Diagnosis.id.in_(diagnosis_ids)).all()} if diagnosis_ids else {}
 
     result_items = []
     for a in items:
@@ -124,7 +128,8 @@ def create_approval():
         return jsonify({'code': 400, 'message': '该诊断已有审批记录'}), 400
 
     # 查找关联的报告
-    report = Report.query.filter_by(diagnosis_id=diagnosis_id).order_by(Report.version_no.desc()).first()
+    report = Report.query.filter_by(diagnosis_id=diagnosis_id).order_by(
+        Report.version_no.desc()).first()
 
     approval = Approval(
         diagnosis_id=diagnosis_id,
@@ -140,7 +145,8 @@ def create_approval():
     diagnosis.report_status = 'pending_review'
 
     db.session.commit()
-    _log_audit(request.current_user_id, 'CREATE_APPROVAL', 'approval', approval.id)
+    _log_audit(request.current_user_id,
+               'CREATE_APPROVAL', 'approval', approval.id)
     return jsonify({'code': 200, 'data': approval.to_dict()})
 
 
@@ -174,12 +180,14 @@ def delete_approval(approval_id):
 
     db.session.delete(approval)
     db.session.commit()
-    _log_audit(request.current_user_id, 'DELETE_APPROVAL', 'approval', approval_id)
+    _log_audit(request.current_user_id,
+               'DELETE_APPROVAL', 'approval', approval_id)
     return jsonify({'code': 200, 'message': '审批记录已删除'})
 
 
 @approvals_bp.route('/<int:approval_id>/approve', methods=['POST'])
 @token_required
+@role_required('admin', 'doctor')  # ⚠️ P1-1: 添加权限控制
 def approve_approval(approval_id):
     """审批通过"""
     approval = Approval.query.get_or_404(approval_id)
@@ -208,12 +216,14 @@ def approve_approval(approval_id):
             report.status = 'approved'
 
     db.session.commit()
-    _log_audit(request.current_user_id, 'APPROVE_DIAGNOSIS', 'approval', approval_id)
+    _log_audit(request.current_user_id,
+               'APPROVE_DIAGNOSIS', 'approval', approval_id)
     return jsonify({'code': 200, 'data': approval.to_dict(include_detail=True)})
 
 
 @approvals_bp.route('/<int:approval_id>/reject', methods=['POST'])
 @token_required
+@role_required('admin', 'doctor')  # ⚠️ P1-1: 添加权限控制
 def reject_approval(approval_id):
     """审批驳回"""
     approval = Approval.query.get_or_404(approval_id)
@@ -248,12 +258,14 @@ def reject_approval(approval_id):
             report.reject_reason = reject_reason
 
     db.session.commit()
-    _log_audit(request.current_user_id, 'REJECT_DIAGNOSIS', 'approval', approval_id)
+    _log_audit(request.current_user_id,
+               'REJECT_DIAGNOSIS', 'approval', approval_id)
     return jsonify({'code': 200, 'data': approval.to_dict(include_detail=True)})
 
 
 @approvals_bp.route('/<int:approval_id>/revise', methods=['POST'])
 @token_required
+@role_required('admin', 'doctor')  # ⚠️ P1-1: 添加权限控制
 def request_revision(approval_id):
     """请求修改"""
     approval = Approval.query.get_or_404(approval_id)
@@ -283,7 +295,8 @@ def request_revision(approval_id):
             report.status = 'revision_needed'
 
     db.session.commit()
-    _log_audit(request.current_user_id, 'REQUEST_REVISION', 'approval', approval_id)
+    _log_audit(request.current_user_id,
+               'REQUEST_REVISION', 'approval', approval_id)
     return jsonify({'code': 200, 'data': approval.to_dict(include_detail=True)})
 
 
@@ -298,11 +311,14 @@ def get_approval_stats():
     revision = Approval.query.filter_by(status='revision_needed').count()
 
     # 统计待审批但无审批记录的诊断数
-    approved_diagnosis_ids = db.session.query(Approval.diagnosis_id).distinct().all()
+    approved_diagnosis_ids = db.session.query(
+        Approval.diagnosis_id).distinct().all()
     id_list = [r[0] for r in approved_diagnosis_ids]
-    unsubmitted_query = Diagnosis.query.filter(Diagnosis.report_status == 'pending_review')
+    unsubmitted_query = Diagnosis.query.filter(
+        Diagnosis.report_status == 'pending_review')
     if id_list:
-        unsubmitted_query = unsubmitted_query.filter(~Diagnosis.id.in_(id_list))
+        unsubmitted_query = unsubmitted_query.filter(
+            ~Diagnosis.id.in_(id_list))
     unsubmitted = unsubmitted_query.count()
 
     return jsonify({
@@ -323,7 +339,8 @@ def get_approval_stats():
 @role_required('admin')
 def sync_missing_approvals():
     """为所有pending_review但无审批记录的诊断补建审批记录"""
-    approved_diagnosis_ids = db.session.query(Approval.diagnosis_id).distinct().all()
+    approved_diagnosis_ids = db.session.query(
+        Approval.diagnosis_id).distinct().all()
     id_list = [r[0] for r in approved_diagnosis_ids]
     query = Diagnosis.query.filter(Diagnosis.report_status == 'pending_review')
     if id_list:
@@ -332,7 +349,8 @@ def sync_missing_approvals():
     missing = query.all()
     created = 0
     for d in missing:
-        report = Report.query.filter_by(diagnosis_id=d.id).order_by(Report.version_no.desc()).first()
+        report = Report.query.filter_by(diagnosis_id=d.id).order_by(
+            Report.version_no.desc()).first()
         approval = Approval(
             diagnosis_id=d.id,
             report_id=report.id if report else None,
@@ -345,7 +363,8 @@ def sync_missing_approvals():
         created += 1
 
     db.session.commit()
-    _log_audit(request.current_user_id, 'SYNC_MISSING_APPROVALS', 'approval', None)
+    _log_audit(request.current_user_id,
+               'SYNC_MISSING_APPROVALS', 'approval', None)
     return jsonify({'code': 200, 'data': {'created': created}})
 
 

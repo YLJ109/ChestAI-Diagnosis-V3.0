@@ -88,11 +88,13 @@ const handleLogout = () => {
     router.push('/patient-login')
 }
 
-// 初始化主题 - 强制使用黑白主题
+// 初始化主题 - 强制使用浅色主题
 onMounted(() => {
     // 设置为浅色主题
     document.documentElement.setAttribute('data-theme', 'light')
-    localStorage.setItem('theme', 'light')
+    document.documentElement.classList.remove('dark')
+    document.documentElement.classList.add('light')
+    // 注意：不再清除 localStorage 中的 theme 设置，避免影响其他模块
 })
 </script>
 

@@ -4,7 +4,6 @@ from api.users import users_bp
 from api.patients import patients_bp
 from api.diagnose import diagnose_bp
 from api.reports import reports_bp
-from api.batch import batch_bp
 from api.triage import triage_bp
 from api.chat import chat_bp
 from api.model_weights import model_weights_bp
@@ -19,7 +18,7 @@ from api.face_auth import face_bp  # 人脸识别
 
 all_blueprints = [
     auth_bp, users_bp, patients_bp, diagnose_bp,
-    reports_bp, batch_bp, triage_bp, chat_bp,
+    reports_bp, triage_bp, chat_bp,
     model_weights_bp, llm_configs_bp, llm_bp, audit_bp,
     settings_bp, dashboard_bp, approvals_bp, patient_portal_bp,
     face_bp,  # 人脸识别

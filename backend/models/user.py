@@ -19,14 +19,23 @@ class User(db.Model):
     status = db.Column(db.String(20), default='active')
     last_login_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    # 人脸识别字段
+    face_descriptor = db.Column(db.LargeBinary)  # 人脸特征向量 (512维)
+    face_image_path = db.Column(db.String(500))  # 人脸照片路径
 
     # 关系
-    diagnoses = db.relationship('Diagnosis', foreign_keys='Diagnosis.doctor_id', backref='doctor', lazy='dynamic')
-    uploaded_diagnoses = db.relationship('Diagnosis', foreign_keys='Diagnosis.technician_id', backref='technician', lazy='dynamic')
-    chat_sessions = db.relationship('AiChatSession', backref='user', lazy='dynamic')
+    diagnoses = db.relationship(
+        'Diagnosis', foreign_keys='Diagnosis.doctor_id', backref='doctor', lazy='dynamic')
+    uploaded_diagnoses = db.relationship(
+        'Diagnosis', foreign_keys='Diagnosis.technician_id', backref='technician', lazy='dynamic')
+    chat_sessions = db.relationship(
+        'AiChatSession', backref='user', lazy='dynamic')
     audit_logs = db.relationship('AuditLog', backref='user', lazy='dynamic')
-    preferences = db.relationship('UserPreference', backref='user', uselist=False)
+    preferences = db.relationship(
+        'UserPreference', backref='user', uselist=False)
 
     def to_dict(self):
         return {
@@ -42,4 +51,5 @@ class User(db.Model):
             'status': self.status,
             'last_login_at': self.last_login_at.strftime('%Y-%m-%d %H:%M:%S') if self.last_login_at else None,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'has_face': bool(self.face_descriptor),  # 是否已录入人脸
         }

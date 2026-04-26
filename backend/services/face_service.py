@@ -65,17 +65,17 @@ class FaceRecognitionService:
             available_providers = ort.get_available_providers()
 
             if 'CUDAExecutionProvider' in available_providers:
-                print(f"[FaceService] ✅ 推理设备: CUDA GPU (NVIDIA)")
-                print(f"[FaceService] 🚀 buffalo_s 模型在 GPU 上约 10-30ms/张，极速识别")
+                print("[FaceService] [OK] 推理设备: CUDA GPU (NVIDIA)")
+                print("[FaceService] [FAST] buffalo_s 模型在 GPU 上约 10-30ms/张，极速识别")
             else:
-                print(f"[FaceService] 💡 推理设备: CPU")
-                print(f"[FaceService] ℹ️ buffalo_s 模型在 CPU 上约 50-100ms/张，快速识别")
+                print("[FaceService] [INFO] 推理设备: CPU")
+                print("[FaceService] [INFO] buffalo_s 模型在 CPU 上约 50-100ms/张，快速识别")
 
             self._initialized = True
             print("[FaceService] 人脸模型加载成功")
 
         except Exception as e:
-            print(f"[FaceService] ❌ 错误: 人脸模型加载失败: {e}")
+            print(f"[FaceService] [ERROR] 错误: 人脸模型加载失败: {e}")
             print("[FaceService] 将使用 CPU 模式")
             self.app = None
             self._initialized = True
@@ -197,6 +197,34 @@ class FaceRecognitionService:
             return False
 
         return True
+
+    @staticmethod
+    def _normalize_embedding(embedding: np.ndarray) -> np.ndarray:
+        """对特征向量进行 L2 归一化
+
+        Args:
+            embedding: 原始特征向量
+
+        Returns:
+            归一化后的特征向量
+        """
+        # 确保是 numpy 数组
+        if not isinstance(embedding, np.ndarray):
+            embedding = np.array(embedding, dtype=np.float32)
+
+        # L2 归一化
+        norm = np.linalg.norm(embedding)
+        if norm > 1e-10:
+            embedding = embedding / norm
+
+            # 验证归一化结果
+            verify_norm = np.linalg.norm(embedding)
+            if abs(verify_norm - 1.0) > 0.01:
+                print(f"[FaceService] ⚠️ 归一化异常: 范数={verify_norm:.6f}")
+        else:
+            print("[FaceService] ⚠️ 特征向量范数接近 0，无法归一化")
+
+        return embedding
 
     def recognize_from_frame(self, frame: np.ndarray) -> Optional[Tuple[np.ndarray, dict]]:
         """从视频帧检测并提取人脸特征

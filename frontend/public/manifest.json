@@ -1,0 +1,90 @@
+{
+    "name": "胸影智诊V3.0 - 患者端",
+    "short_name": "胸影智诊",
+    "description": "AI智能辅助胸部X光影像诊断系统 - 患者移动端",
+    "start_url": "/patient/mobile",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#667eea",
+    "orientation": "portrait-primary",
+    "categories": [
+        "health",
+        "medical"
+    ],
+    "lang": "zh-CN",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshots/home.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "首页"
+        },
+        {
+            "src": "/screenshots/qrcode.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "二维码"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "查看报告",
+            "short_name": "报告",
+            "description": "查看我的诊断报告",
+            "url": "/patient/mobile?tab=report",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-report.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "就诊历史",
+            "short_name": "历史",
+            "description": "查看就诊历史记录",
+            "url": "/patient/mobile?tab=history",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-history.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "share_target": {
+        "action": "/patient/mobile/share",
+        "method": "GET",
+        "enctype": "application/x-www-form-urlencoded",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    }
+}

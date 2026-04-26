@@ -8,7 +8,8 @@ class Diagnosis(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     diagnosis_no = db.Column(db.String(50), unique=True, nullable=False)
-    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
+    patient_id = db.Column(db.Integer, db.ForeignKey(
+        'patients.id'), nullable=True)  # nullable: 无患者时允许为空
     doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     technician_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     image_path = db.Column(db.String(500), nullable=False)
@@ -17,14 +18,13 @@ class Diagnosis(db.Model):
     model_version = db.Column(db.String(50))
     report_status = db.Column(db.String(30), default='pending_review')
     diagnosis_type = db.Column(db.String(20), default='single')
-    batch_id = db.Column(db.Integer, db.ForeignKey('batch_records.id'))
     created_at = db.Column(db.DateTime, default=datetime.now)
     reviewed_at = db.Column(db.DateTime)
     reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     # 关系
     disease_probabilities = db.relationship('DiseaseProbability', backref='diagnosis',
-                                           cascade='all, delete-orphan', lazy='dynamic')
+                                            cascade='all, delete-orphan', lazy='dynamic')
     reports = db.relationship('Report', backref='diagnosis',
                               cascade='all, delete-orphan', lazy='dynamic')
 
@@ -41,7 +41,6 @@ class Diagnosis(db.Model):
             'model_version': self.model_version,
             'report_status': self.report_status,
             'diagnosis_type': self.diagnosis_type,
-            'batch_id': self.batch_id,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'reviewed_at': self.reviewed_at.strftime('%Y-%m-%d %H:%M:%S') if self.reviewed_at else None,
             'reviewed_by': self.reviewed_by,
@@ -52,7 +51,8 @@ class DiseaseProbability(db.Model):
     __tablename__ = 'disease_probabilities'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    diagnosis_id = db.Column(db.Integer, db.ForeignKey('diagnoses.id', ondelete='CASCADE'), nullable=False)
+    diagnosis_id = db.Column(db.Integer, db.ForeignKey(
+        'diagnoses.id', ondelete='CASCADE'), nullable=False)
     disease_code = db.Column(db.String(30), nullable=False)
     disease_name_zh = db.Column(db.String(50), nullable=False)
     probability = db.Column(db.Float, nullable=False)

@@ -67,7 +67,7 @@
                             </div>
                         </div>
                         <div class="report-actions">
-                            <el-button type="primary" size="small" plain @click.stop="openReportDetail(r)">
+                            <el-button size="small" plain class="view-report-btn" @click.stop="openReportDetail(r)">
                                 <el-icon>
                                     <View />
                                 </el-icon>查看
@@ -146,7 +146,8 @@
                                 原始胸部X光片
                             </div>
                             <div class="image-container">
-                                <img :src="currentReport.diagnosis.image_url" alt="原始X光片" />
+                                <img :src="currentReport.diagnosis.image_url" alt="原始X光片" loading="lazy"
+                                    decoding="async" @load="onImageLoad" @error="onImageError" />
                             </div>
                         </div>
 
@@ -159,7 +160,8 @@
                                 Grad-CAM 热力图
                             </div>
                             <div class="image-container">
-                                <img :src="currentReport.diagnosis.heatmap_url" alt="热力图" />
+                                <img :src="currentReport.diagnosis.heatmap_url" alt="热力图" loading="lazy"
+                                    decoding="async" @load="onImageLoad" @error="onImageError" />
                             </div>
                         </div>
                     </div>
@@ -334,6 +336,17 @@ async function loadReports() {
     }
 }
 
+// 图片加载处理
+function onImageLoad(e: Event) {
+    const img = e.target as HTMLImageElement
+    img.classList.add('loaded')
+}
+
+function onImageError(e: Event) {
+    const img = e.target as HTMLImageElement
+    img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f0f0f0" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="16" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3E图片加载失败%3C/text%3E%3C/svg%3E'
+}
+
 async function openReportDetail(r: any) {
     try {
         const res: any = await getPatientReportDetailApi(r.id)
@@ -365,31 +378,9 @@ function handlePrintReport() {
     if (!currentReport.value) return
 
     const diagnosis = currentReport.value.diagnosis
-    const report = currentReport.value.report
-    const probabilities = currentReport.value.probabilities || []
 
-    // 构建打印数据
-    const printData = {
-        patientName: diagnosis?.patient_name || '-',
-        patientGender: diagnosis?.patient_gender === 'male' ? '男' : (diagnosis?.patient_gender === 'female' ? '女' : '-'),
-        patientAge: diagnosis?.patient_age ? `${diagnosis.patient_age}岁` : '-',
-        patientNo: diagnosis?.patient_no || '-',
-        diagnosisNo: diagnosis?.diagnosis_no || '-',
-        reportDate: new Date().toISOString().split('T')[0],
-        diagnoseTime: diagnosis?.created_at || '-',
-        resultText: getTopDisease(probabilities),
-        confidence: probabilities.length > 0 ? (probabilities[0].probability * 100).toFixed(1) : '0',
-        imageUrl: diagnosis?.image_url || '',
-        heatmapUrl: diagnosis?.heatmap_url || '',
-        reportText: report?.ai_generated_content || report?.impression || '',
-        probabilities: probabilities.slice(0, 5)
-    }
-
-    // 保存到 sessionStorage
-    sessionStorage.setItem('print_report_data', JSON.stringify(printData))
-
-    // 跳转到打印页面
-    router.push('/patient/report/print')
+    // 跳转到统一打印页面（业务端路由）
+    router.push({ name: 'ReportPrint', params: { id: diagnosis.id } })
 }
 
 // 获取最高概率的疾病名称
@@ -629,6 +620,18 @@ function getProgressColor(prob: number): string {
     display: flex;
     gap: 10px;
     flex-shrink: 0;
+}
+
+.view-report-btn {
+    background: #FFFFFF !important;
+    color: #3B82F6 !important;
+    border: 1px solid #3B82F6 !important;
+}
+
+.view-report-btn:hover {
+    background: #3B82F6 !important;
+    color: #FFFFFF !important;
+    border-color: #3B82F6 !important;
 }
 
 .empty-hint {
@@ -938,5 +941,11 @@ function getProgressColor(prob: number): string {
     max-height: 100%;
     object-fit: contain;
     border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-container img.loaded {
+    opacity: 1;
 }
 </style>

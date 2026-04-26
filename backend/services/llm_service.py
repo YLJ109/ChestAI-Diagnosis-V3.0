@@ -10,7 +10,8 @@ from utils.encryption import decrypt_value
 # ============================================================
 # 全局缓存与并发控制
 # ============================================================
-_llm_client_cache = {}       # {config_id: (client, model_name, default_params, cached_at)}
+# {config_id: (client, model_name, default_params, cached_at)}
+_llm_client_cache = {}
 _llm_client_lock = threading.Lock()  # 缓存写锁
 _llm_semaphore = threading.Semaphore(5)  # 并发信号量：最多 5 个同时 LLM 请求
 _CACHE_TTL = 300  # 缓存有效期 5 分钟（配置变更后自动刷新）
@@ -38,15 +39,18 @@ def _get_llm_client(llm_config_id=None):
     if llm_config_id:
         config = LlmConfig.query.get(llm_config_id)
     else:
-        config = LlmConfig.query.filter_by(is_default=True, status='active').first()
+        config = LlmConfig.query.filter_by(
+            is_default=True, status='active').first()
         if not config:
-            config = LlmConfig.query.filter_by(status='active').order_by(LlmConfig.priority).first()
+            config = LlmConfig.query.filter_by(
+                status='active').order_by(LlmConfig.priority).first()
 
     if not config:
         return None, None, None
 
     api_key = decrypt_value(config.api_key_encrypted)
-    default_params = json.loads(config.default_params) if config.default_params else {}
+    default_params = json.loads(
+        config.default_params) if config.default_params else {}
 
     # 创建客户端（带超时控制）
     client = OpenAI(
@@ -60,7 +64,8 @@ def _get_llm_client(llm_config_id=None):
 
     # 写入缓存
     with _llm_client_lock:
-        _llm_client_cache[cache_key] = (client, config.model_name, default_params, now)
+        _llm_client_cache[cache_key] = (
+            client, config.model_name, default_params, now)
 
     return result
 
@@ -93,10 +98,10 @@ def generate_report(probabilities, patient_info=None):
 
     for attempt in range(max_retries + 1):
         try:
-            # 并发控制：获取信号量（非阻塞式等待，最长等 120 秒）
-            acquired = _llm_semaphore.acquire(timeout=120)
+            # 并发控制：获取信号量（非阻塞式等待，最长等 5 秒）
+            acquired = _llm_semaphore.acquire(timeout=5)
             if not acquired:
-                print("[LLM服务] 并发信号量超时，跳过本次报告生成")
+                print("[LLM服务] 并发信号量超时，使用本地报告")
                 return _generate_fallback_report(probabilities, patient_info)
 
             try:
@@ -107,7 +112,8 @@ def generate_report(probabilities, patient_info=None):
         except Exception as e:
             if attempt < max_retries:
                 wait_time = (2 ** attempt) * 1.0  # 指数退避: 1s, 2s
-                print(f"[LLM服务] 报告生成失败(第{attempt+1}次): {e}, {wait_time:.0f}s 后重试...")
+                print(
+                    f"[LLM服务] 报告生成失败(第{attempt+1}次): {e}, {wait_time:.0f}s 后重试...")
                 time.sleep(wait_time)
             else:
                 print(f"[LLM服务] 报告生成失败(已耗尽{max_retries+1}次重试): {e}")
@@ -118,6 +124,7 @@ def _do_generate_report(probabilities, patient_info=None):
     """实际执行一次 LLM 报告生成调用"""
     client, model_name, default_params = _get_llm_client()
     if not client:
+        print("[LLM服务] ⚠️ 未配置LLM API，使用本地报告模板")
         return _generate_fallback_report(probabilities, patient_info)
 
     # 构建概率摘要
@@ -207,19 +214,24 @@ def _generate_fallback_report(probabilities, patient_info=None):
 
     if top:
         for d in top:
-            findings_parts.append(f"影像提示{d['disease_name_zh']}可能，AI检测概率{d['probability']*100:.1f}%")
-            impression_parts.append(f"{d['disease_name_zh']}（概率{d['probability']*100:.1f}%）")
+            findings_parts.append(
+                f"影像提示{d['disease_name_zh']}可能，AI检测概率{d['probability']*100:.1f}%")
+            impression_parts.append(
+                f"{d['disease_name_zh']}（概率{d['probability']*100:.1f}%）")
     if moderate:
         for d in moderate:
-            findings_parts.append(f"不能排除{d['disease_name_zh']}，AI检测概率{d['probability']*100:.1f}%")
-            impression_parts.append(f"{d['disease_name_zh']}待排（概率{d['probability']*100:.1f}%）")
+            findings_parts.append(
+                f"不能排除{d['disease_name_zh']}，AI检测概率{d['probability']*100:.1f}%")
+            impression_parts.append(
+                f"{d['disease_name_zh']}待排（概率{d['probability']*100:.1f}%）")
 
     if not top and not moderate:
         findings_parts.append("胸部X光影像未见明显异常")
         impression_parts.append("未见明显异常")
 
     rec_parts.append("建议结合临床表现和其他检查结果综合判断")
-    clinical_finding = patient_info.get('clinical_finding', '') if patient_info else ''
+    clinical_finding = patient_info.get(
+        'clinical_finding', '') if patient_info else ''
     if clinical_finding:
         findings_parts.insert(0, f"患者主诉：{clinical_finding}")
         rec_parts.append(f"针对患者\"{clinical_finding}\"症状，建议针对性检查")
@@ -264,8 +276,10 @@ def chat_stream(messages, llm_config_id=None, persona=None):
 
     api_messages = [system_msg] + messages[-10:]  # 保留最近10轮
 
-    temperature = default_params.get('temperature', 0.7) if default_params else 0.7
-    max_tokens = default_params.get('max_tokens', 2048) if default_params else 2048
+    temperature = default_params.get(
+        'temperature', 0.7) if default_params else 0.7
+    max_tokens = default_params.get(
+        'max_tokens', 2048) if default_params else 2048
 
     try:
         stream = client.chat.completions.create(
@@ -297,7 +311,8 @@ def triage_analyze(symptoms, severity, vital_signs=None):
     emergency_keywords = ['咯血', '呼吸困难', '胸痛', '意识障碍', '窒息']
     urgent_keywords = ['高热', '持续咳嗽', '大量咳痰', '气促']
 
-    symptom_text = ' '.join(symptoms) if isinstance(symptoms, list) else symptoms
+    symptom_text = ' '.join(symptoms) if isinstance(
+        symptoms, list) else symptoms
 
     category = '呼吸科'
     urgency = '普通'

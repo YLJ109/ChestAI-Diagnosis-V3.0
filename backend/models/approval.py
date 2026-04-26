@@ -8,14 +8,19 @@ class Approval(db.Model):
     __tablename__ = 'approvals'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    diagnosis_id = db.Column(db.Integer, db.ForeignKey('diagnoses.id', ondelete='CASCADE'), nullable=False)
-    report_id = db.Column(db.Integer, db.ForeignKey('reports.id', ondelete='SET NULL'))
-    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
-    submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    diagnosis_id = db.Column(db.Integer, db.ForeignKey(
+        'diagnoses.id', ondelete='CASCADE'), nullable=False)
+    report_id = db.Column(db.Integer, db.ForeignKey(
+        'reports.id', ondelete='SET NULL'))
+    patient_id = db.Column(db.Integer, db.ForeignKey(
+        'patients.id'), nullable=True)  # nullable: 无患者时允许为空
+    submitter_id = db.Column(
+        db.Integer, db.ForeignKey('users.id'), nullable=False)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     # 审批状态: pending / approved / rejected / revision_needed
-    status = db.Column(db.String(30), default='pending', nullable=False, index=True)
+    status = db.Column(db.String(30), default='pending',
+                       nullable=False, index=True)
     # 优先级: normal / urgent / critical
     priority = db.Column(db.String(20), default='normal', nullable=False)
 
@@ -28,11 +33,15 @@ class Approval(db.Model):
     reviewed_at = db.Column(db.DateTime)
 
     # 关系
-    diagnosis = db.relationship('Diagnosis', backref=db.backref('approval', uselist=False))
-    report = db.relationship('Report', backref=db.backref('approval_record', uselist=False))
+    diagnosis = db.relationship(
+        'Diagnosis', backref=db.backref('approval', uselist=False))
+    report = db.relationship('Report', backref=db.backref(
+        'approval_record', uselist=False))
     patient = db.relationship('Patient', backref='approvals')
-    submitter = db.relationship('User', foreign_keys=[submitter_id], backref='submitted_approvals')
-    reviewer = db.relationship('User', foreign_keys=[reviewer_id], backref='reviewed_approvals')
+    submitter = db.relationship(
+        'User', foreign_keys=[submitter_id], backref='submitted_approvals')
+    reviewer = db.relationship('User', foreign_keys=[
+                               reviewer_id], backref='reviewed_approvals')
 
     def to_dict(self, include_detail=False):
         result = {
