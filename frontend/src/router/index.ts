@@ -114,6 +114,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/patient/ChatPage.vue'),
         meta: { title: 'AI咨询', public: true },  // ✅ 公开
       },
+      {
+        path: 'report/print/:id?',
+        name: 'PatientReportPrint',
+        component: () => import('@/views/patient/ReportPrintPage.vue'),
+        meta: { title: '打印报告', requiresAuth: true },  // 🔒 需要登录
+      },
     ],
   },
 

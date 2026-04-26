@@ -69,7 +69,7 @@
                                     <span class="patient-name">{{ reportData.patientName }}</span>
                                     <span class="patient-details">{{ reportData.patientGender }} | {{
                                         reportData.patientAge
-                                        }}</span>
+                                    }}</span>
                                 </div>
                             </div>
                             <div class="patient-grid">
@@ -208,7 +208,9 @@ async function imageToBase64(url: string): Promise<string> {
 async function loadReportData() {
     try {
         const diagnosisId = route.params.id as string
-        console.log('[ReportPrint] diagnosisId:', diagnosisId)
+        console.log('[ReportPrint] 页面加载, diagnosisId:', diagnosisId)
+        console.log('[ReportPrint] route.params:', route.params)
+        console.log('[ReportPrint] route.query:', route.query)
 
         if (!diagnosisId) {
             ElMessage.error('缺少诊断ID参数')
@@ -216,10 +218,14 @@ async function loadReportData() {
             return
         }
 
+        console.log('[ReportPrint] 开始调用 getPrintDataApi, diagnosisId:', parseInt(diagnosisId))
         const res: any = await getPrintDataApi(parseInt(diagnosisId))
+        console.log('[ReportPrint] API 返回结果:', res)
 
         if (res.code === 200 && res.data) {
             const data = res.data
+            console.log('[ReportPrint] 解析数据:', data)
+
             reportData.value = {
                 patientName: data.patient_name || '-',
                 patientGender: data.patient_gender === 'male' ? '男' : (data.patient_gender === 'female' ? '女' : '-'),
@@ -238,6 +244,8 @@ async function loadReportData() {
                 patientQrcodeBase64: '',
                 patientId: data.patient_id || 0
             }
+
+            console.log('[ReportPrint] reportData 已设置:', reportData.value)
 
             // 转换图片为 base64
             if (reportData.value.imageUrl) {

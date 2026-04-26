@@ -375,12 +375,30 @@ async function openReportDetail(r: any) {
 
 // 打印报告
 function handlePrintReport() {
-    if (!currentReport.value) return
+    if (!currentReport.value) {
+        console.error('[打印报告] currentReport 为空')
+        ElMessage.error('报告数据未加载')
+        return
+    }
 
     const diagnosis = currentReport.value.diagnosis
 
-    // 跳转到统一打印页面（业务端路由）
-    router.push({ name: 'ReportPrint', params: { id: diagnosis.id } })
+    console.log('[打印报告] 准备跳转:', {
+        currentReport: currentReport.value,
+        diagnosis: diagnosis,
+        diagnosisId: diagnosis?.id
+    })
+
+    if (!diagnosis || !diagnosis.id) {
+        console.error('[打印报告] diagnosis 或 diagnosis.id 不存在')
+        ElMessage.error('诊断数据不完整，无法打印')
+        return
+    }
+
+    // ✅ 在新窗口中打开打印页面（患者端路由）
+    const printUrl = router.resolve({ name: 'PatientReportPrint', params: { id: diagnosis.id } }).href
+    console.log('[打印报告] 打开新窗口:', printUrl)
+    window.open(printUrl, '_blank')
 }
 
 // 获取最高概率的疾病名称
