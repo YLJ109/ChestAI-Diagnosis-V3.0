@@ -266,7 +266,7 @@ async function startScanner() {
       { facingMode: 'environment' },
       {
         fps: 10,
-        qrbox: { width: 250, height: 250 },
+        qrbox: { width: 280, height: 280 }, // ✅ 与容器尺寸匹配
       },
       onScanSuccess,
       onScanFailure
@@ -729,7 +729,8 @@ function goToRegister() {
 .qr-reader-wrapper {
   position: relative;
   width: 320px;
-  height: 320px;
+  height: 100%;
+
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 2px solid var(--glass-border);
@@ -744,6 +745,13 @@ function goToRegister() {
 .qr-reader {
   width: 100%;
   height: 100%;
+}
+
+/* ✅ 修复：让 html5-qrcode 的视频元素完整显示 */
+.qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
 }
 
 /* 扫描线动画 */
