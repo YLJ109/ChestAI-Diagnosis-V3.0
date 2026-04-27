@@ -33,7 +33,7 @@
         <!-- 主体内容 -->
         <div class="main-content">
             <!-- 阶段1：上传影像（未开始诊断） -->
-            <div v-if="!diagnosing && patientResults.length === 0 && !diagnosisAborted" class="phase-upload">
+            <div v-if="!diagnosing && patientResults.length === 0" class="phase-upload">
                 <!-- 空状态：上传区域 -->
                 <div v-if="imageItems.length === 0" class="upload-container">
                     <div class="upload-card">
@@ -144,8 +144,49 @@
                                             <span>已匹配患者</span>
                                         </div>
 
-                                        <div class="symptom-input" v-if="item.parsed">
+                                        <!-- ✅ 文件丢失提示 -->
+                                        <div v-if="!item.file" class="file-missing-alert">
+                                            <el-alert type="info" :closable="false" show-icon size="small">
+                                                <template #title>
+                                                    <span style="font-size: 11px">ℹ️ 原始文件需重新上传（诊断结果已保留）</span>
+                                                </template>
+                                            </el-alert>
+                                        </div>
+
+                                        <div class="symptom-input" v-if="item.parsed && item.file">
                                             <el-input v-model="item.parsed.symptom" placeholder="症状描述" size="small" />
+                                        </div>
+
+                                        <!-- ✅ 文件名不规范时，显示患者选择 -->
+                                        <div v-if="!item.parsed && item.file" class="patient-select">
+                                            <el-alert type="warning" :closable="false" show-icon size="small">
+                                                <template #title>
+                                                    <span style="font-size: 11px">文件名不规范</span>
+                                                </template>
+                                            </el-alert>
+                                            <div class="select-actions">
+                                                <el-button size="small" type="primary" plain
+                                                    @click="openPatientSelectDialog(index)">
+                                                    <el-icon>
+                                                        <User />
+                                                    </el-icon>
+                                                    选择患者
+                                                </el-button>
+                                                <el-button size="small" type="success" plain
+                                                    @click="openCreatePatientDialog(index)">
+                                                    <el-icon>
+                                                        <Plus />
+                                                    </el-icon>
+                                                    创建患者
+                                                </el-button>
+                                            </div>
+                                            <div v-if="item.selectedPatient" class="selected-patient-info">
+                                                <el-icon color="var(--primary)">
+                                                    <CircleCheck />
+                                                </el-icon>
+                                                <span>{{ item.selectedPatient.name }} ({{
+                                                    item.selectedPatient.patient_no }})</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -153,6 +194,11 @@
                         </div>
 
                         <div class="card-footer">
+                            <!-- ✅ 隐藏的 el-upload 组件，用于继续添加文件 -->
+                            <el-upload ref="uploadRef" :auto-upload="false" :show-file-list="false" :limit="50"
+                                accept=".png,.jpg,.jpeg,.bmp,.gif,.webp" :on-change="onFileChange" multiple
+                                style="display: none;">
+                            </el-upload>
                             <el-button plain @click="handleAddMore">
                                 <el-icon>
                                     <Plus />
@@ -279,12 +325,13 @@
 
                         <!-- 诊断完成 -->
                         <template v-else-if="currentPatientResult?.status === 'completed'">
+                            <!-- ✅ 立即显示诊断结果（不等待AI报告） -->
                             <!-- 诊断结果头部 -->
                             <div class="result-header" v-if="currentPatientResult">
                                 <div class="result-badge"
-                                    :class="currentPatientResult.result === '正常' ? 'normal' : 'abnormal'">
+                                    :class="currentPatientResult.result?.includes('正常') ? 'normal' : 'abnormal'">
                                     <el-icon :size="24">
-                                        <CircleCheck v-if="currentPatientResult.result === '正常'" />
+                                        <CircleCheck v-if="currentPatientResult.result?.includes('正常')" />
                                         <Warning v-else />
                                     </el-icon>
                                     <div class="result-text">
@@ -383,7 +430,7 @@
                             </el-button>
                         </div>
                         <div class="panel-body">
-                            <!-- 报告加载中 -->
+                            <!-- ✅ 报告加载中（漂亮的加载动画） -->
                             <div v-if="currentPatientResult?.generatingReport" class="report-loading">
                                 <div class="loading-spinner">
                                     <div class="spinner-ring"></div>
@@ -407,37 +454,17 @@
 
                             <!-- 报告内容 -->
                             <div v-else-if="currentPatientResult?.reportContent" class="report-content">
-                                <pre>{{ currentPatientResult.reportContent }}</pre>
+                                <div class="report-text"
+                                    v-html="formatReportToHtml(currentPatientResult.reportContent)"></div>
                             </div>
 
-                            <!-- 空状态（等待诊断完成） -->
+                            <!-- 空状态（诊断未完成时显示） -->
                             <div v-else class="report-waiting">
-                                <div class="loading-spinner">
-                                    <div class="spinner-ring"></div>
-                                    <div class="spinner-ring"></div>
-                                    <div class="spinner-ring"></div>
-                                    <div class="spinner-icon">
-                                        <el-icon :size="32" class="rotating-icon">
-                                            <Document />
-                                        </el-icon>
-                                    </div>
-                                </div>
-                                <h4 class="waiting-title">等待诊断完成</h4>
-                                <p class="waiting-desc">AI诊断完成后将自动生成报告</p>
-                                <div class="waiting-tips">
-                                    <div class="tip-item">
-                                        <el-icon>
-                                            <InfoFilled />
-                                        </el-icon>
-                                        <span>报告包含影像学表现、诊断结论及建议</span>
-                                    </div>
-                                    <div class="tip-item">
-                                        <el-icon>
-                                            <InfoFilled />
-                                        </el-icon>
-                                        <span>生成后可打印或导出为PDF格式</span>
-                                    </div>
-                                </div>
+                                <el-icon :size="48" color="var(--text-muted)">
+                                    <Document />
+                                </el-icon>
+                                <p>等待诊断完成</p>
+                                <span class="hint-text">AI诊断完成后将自动生成报告</span>
                             </div>
                         </div>
                     </div>
@@ -464,21 +491,93 @@
                             <ArrowRight />
                         </el-icon>
                     </el-button>
+
+
                 </div>
             </div>
         </div>
-    </div>
 
+        <!-- ✅ 选择患者对话框 -->
+        <el-dialog v-model="patientSelectDialogVisible" title="选择患者" width="600px" :close-on-click-modal="false">
+            <el-input v-model="patientSearchKeyword" placeholder="搜索患者姓名或编号" clearable style="margin-bottom: 16px">
+                <template #prefix>
+                    <el-icon>
+                        <Search />
+                    </el-icon>
+                </template>
+            </el-input>
+            <div class="patient-list" style="max-height: 400px; overflow-y: auto">
+                <div v-for="patient in filteredPatients" :key="patient.id" class="patient-option"
+                    :class="{ selected: tempSelectedPatient?.id === patient.id }"
+                    @click="tempSelectedPatient = patient">
+                    <div class="patient-option-info">
+                        <el-avatar :size="36" :style="{ background: getAvatarColor(patient.name) }">
+                            {{ patient.name?.charAt(0) || '?' }}
+                        </el-avatar>
+                        <div class="patient-option-details">
+                            <div class="patient-option-name">{{ patient.name }}</div>
+                            <div class="patient-option-meta">
+                                <span>{{ patient.patient_no }}</span>
+                                <span>{{ patient.gender === 'male' ? '男' : '女' }} / {{ patient.age }}岁</span>
+                            </div>
+                        </div>
+                    </div>
+                    <el-icon v-if="tempSelectedPatient?.id === patient.id" color="var(--primary)" :size="20">
+                        <CircleCheck />
+                    </el-icon>
+                </div>
+                <el-empty v-if="filteredPatients.length === 0" description="暂无匹配的患者" />
+            </div>
+            <template #footer>
+                <el-button @click="patientSelectDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="confirmSelectPatient" :disabled="!tempSelectedPatient">
+                    确定选择
+                </el-button>
+            </template>
+        </el-dialog>
+
+        <!-- ✅ 创建患者对话框 -->
+        <el-dialog v-model="patientCreateDialogVisible" title="创建新患者" width="500px" :close-on-click-modal="false">
+            <el-form :model="newPatientForm" label-width="80px" label-position="left">
+                <el-form-item label="患者编号" required>
+                    <el-input v-model="newPatientForm.patient_no" placeholder="如：P20260101001" />
+                </el-form-item>
+                <el-form-item label="姓名" required>
+                    <el-input v-model="newPatientForm.name" placeholder="请输入姓名" />
+                </el-form-item>
+                <el-form-item label="性别" required>
+                    <el-radio-group v-model="newPatientForm.gender">
+                        <el-radio value="male">男</el-radio>
+                        <el-radio value="female">女</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="年龄" required>
+                    <el-input-number v-model="newPatientForm.age" :min="0" :max="150" style="width: 100%" />
+                </el-form-item>
+                <el-form-item label="电话">
+                    <el-input v-model="newPatientForm.phone" placeholder="可选" />
+                </el-form-item>
+                <el-form-item label="地址">
+                    <el-input v-model="newPatientForm.address" placeholder="可选" type="textarea" :rows="2" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="patientCreateDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="confirmCreatePatient">创建并选择</el-button>
+            </template>
+        </el-dialog>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { diagnoseSingleApi } from '@/api/diagnose'
 import { createPatientApi, getPatientsApi } from '@/api/patients'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-    Upload, Delete, Plus, Loading, CircleCheck, Document, InfoFilled, Warning, Close
+    Upload, Delete, Plus, Loading, CircleCheck, Document, InfoFilled, Warning, Close, User, Search,
+    ArrowLeft, ArrowRight
 } from '@element-plus/icons-vue'
 import type { UploadFile } from 'element-plus'
 
@@ -487,6 +586,35 @@ const uploadRef = ref()
 const diagnosing = ref(false)
 const diagnosisAborted = ref(false) // 诊断是否被终止
 let diagnosisTask: any = null // 保存诊断任务引用
+let abortController: AbortController | null = null // ✅ 用于中断API请求
+
+// ✅ 患者选择对话框相关
+const patientSelectDialogVisible = ref(false)
+const patientCreateDialogVisible = ref(false)
+const patientSearchKeyword = ref('')
+const tempSelectedPatient = ref<any>(null)
+const currentEditImageIndex = ref(-1)  // 当前编辑的影像索引
+const availablePatients = ref<any[]>([])  // 可用患者列表
+
+// ✅ 新患者表单
+const newPatientForm = ref({
+    patient_no: '',
+    name: '',
+    gender: 'male',
+    age: 30,
+    phone: '',
+    address: ''
+})
+
+// 过滤后的患者列表
+const filteredPatients = computed(() => {
+    if (!patientSearchKeyword.value) return availablePatients.value
+    const keyword = patientSearchKeyword.value.toLowerCase()
+    return availablePatients.value.filter(p =>
+        p.name?.toLowerCase().includes(keyword) ||
+        p.patient_no?.toLowerCase().includes(keyword)
+    )
+})
 
 interface ParsedInfo {
     patientId: string
@@ -504,6 +632,7 @@ interface ImageItem {
     fileSize: string
     thumbnail: string
     parsed: ParsedInfo | null
+    selectedPatient: any | null  // ✅ 用户手动选择的患者
 }
 
 const imageItems = ref<ImageItem[]>([])
@@ -597,7 +726,8 @@ async function onFileChange(file: UploadFile, files: UploadFile[]) {
         filename: file.name,
         fileSize: formatFileSize(newFile.size),
         thumbnail,
-        parsed
+        parsed,
+        selectedPatient: null  // ✅ 初始化为 null
     }
 
     imageItems.value.push(item)
@@ -634,7 +764,13 @@ function handleClearAll() {
 
 // 继续添加
 function handleAddMore() {
-    uploadRef.value?.handleClick()
+    // 通过 DOM 操作触发文件选择
+    const input = uploadRef.value?.$el?.querySelector('input[type="file"]')
+    if (input) {
+        input.click()
+    } else {
+        console.error('[继续添加] 无法找到文件输入框')
+    }
 }
 
 // 选择患者
@@ -701,12 +837,30 @@ function handleClearData() {
 
 // 保存诊断状态到 localStorage
 function saveDiagnosisState() {
+    // 构建可序列化的影像列表（排除 File 对象）
+    const serializableImageItems = imageItems.value.map(item => ({
+        filename: item.filename,
+        fileSize: item.fileSize,
+        thumbnail: item.thumbnail,
+        parsed: item.parsed,
+        selectedPatient: item.selectedPatient ? {
+            id: item.selectedPatient.id,
+            patient_no: item.selectedPatient.patient_no,
+            name: item.selectedPatient.name,
+            gender: item.selectedPatient.gender,
+            age: item.selectedPatient.age,
+            phone: item.selectedPatient.phone,
+            address: item.selectedPatient.address
+        } : null
+    }))
+
     // 只保存必要的字段，避免序列化问题
     const state = {
         diagnosing: diagnosing.value,
         diagnosisAborted: diagnosisAborted.value,
         completedCount: completedCount.value,
         selectedPatientIndex: selectedPatientIndex.value,
+        imageItems: serializableImageItems, // ✅ 保存影像元数据
         patientResults: patientResults.value.map(p => ({
             name: p.name,
             patient_no: p.patient_no,
@@ -718,12 +872,16 @@ function saveDiagnosisState() {
             heatmapUrl: p.heatmapUrl,
             reportContent: p.reportContent,
             diagnosis_id: p.diagnosis_id,
+            reportId: p.reportId,
             clinical_info: p.clinical_info,
             patient: p.patient ? {
                 id: p.patient.id,
+                patient_no: p.patient.patient_no,
                 name: p.patient.name,
                 gender: p.patient.gender,
-                age: p.patient.age
+                age: p.patient.age,
+                phone: p.patient.phone,
+                address: p.patient.address
             } : null
         })),
         timestamp: Date.now()
@@ -731,18 +889,6 @@ function saveDiagnosisState() {
 
     try {
         localStorage.setItem('batchDiagnosisState', JSON.stringify(state))
-        console.log('[批量诊断] 状态已保存:', {
-            diagnosing: state.diagnosing,
-            completedCount: state.completedCount,
-            patientCount: state.patientResults.length,
-            patients: state.patientResults.map(p => ({
-                name: p.name,
-                patient_no: p.patient_no,
-                status: p.status,
-                hasPatient: !!p.patient,
-                patientName: p.patient?.name
-            }))
-        })
     } catch (err) {
         console.error('保存诊断状态失败:', err)
     }
@@ -753,7 +899,6 @@ function restoreDiagnosisState() {
     try {
         const savedState = localStorage.getItem('batchDiagnosisState')
         if (!savedState) {
-            console.log('[批量诊断] 无保存状态')
             return false
         }
 
@@ -761,41 +906,60 @@ function restoreDiagnosisState() {
 
         // 检查状态是否过期（超过24小时）
         if (Date.now() - state.timestamp > 24 * 60 * 60 * 1000) {
-            console.log('[批量诊断] 状态已过期，清除')
             localStorage.removeItem('batchDiagnosisState')
             return false
         }
 
-        console.log('[批量诊断] 恢复状态:', {
-            diagnosing: state.diagnosing,
-            diagnosisAborted: state.diagnosisAborted,
-            completedCount: state.completedCount,
-            patientCount: state.patientResults?.length
-        })
+        // ✅ 恢复影像列表（不包含 File 对象）
+        if (state.imageItems && state.imageItems.length > 0) {
+            // 恢复影像元数据，但标记为需要重新上传文件
+            imageItems.value = state.imageItems.map((item: any) => ({
+                file: null as any, // ⚠️ File 对象无法恢复，设为 null
+                filename: item.filename,
+                fileSize: item.fileSize,
+                thumbnail: item.thumbnail,
+                parsed: item.parsed,
+                selectedPatient: item.selectedPatient
+            }))
 
-        // 恢复状态 - 不恢夏 diagnosing 状态，因为任务已丢失
-        // 只恢复已完成的诊断结果
-        diagnosisAborted.value = state.diagnosisAborted || false
+            // 如果有未关联文件的影像，提示用户
+            const missingFiles = imageItems.value.filter(item => !item.file).length
+            if (missingFiles > 0) {
+                console.warn(`[批量诊断] ${missingFiles} 个影像文件丢失（File对象无法持久化），但诊断结果已保留`)
+            }
+        }
+
+        // ✅ 恢复状态逻辑
+        // 如果保存时诊断正在进行中，恢复后也标记为诊断中（显示进度条）
+        if (state.diagnosing) {
+            diagnosing.value = true
+            diagnosisAborted.value = false
+        } else {
+            // 诊断已完成或已终止
+            diagnosing.value = false
+            diagnosisAborted.value = state.diagnosisAborted || true
+        }
+
         completedCount.value = state.completedCount || 0
         selectedPatientIndex.value = state.selectedPatientIndex || 0
 
         // 恢复患者结果
         if (state.patientResults && state.patientResults.length > 0) {
             patientResults.value = state.patientResults.map((p: any) => {
-                // 根据是否有诊断结果来决定状态
                 let restoredStatus = p.status
 
-                if (p.status === 'processing' || p.status === 'waiting') {
-                    // 如果正在诊断中或等待中，但任务已丢失
-                    if (p.result && p.result.length > 0) {
-                        // 有诊断结果，说明已经完成，标记为 completed
-                        restoredStatus = 'completed'
-                    } else {
-                        // 没有诊断结果，说明诊断未完成，保持 processing 让用户知道
-                        // 或者标记为 error 表示任务中断
-                        restoredStatus = 'error'
-                    }
+                // ✅ 关键修复：根据是否有诊断结果和原状态来恢复
+                if (p.result && p.result !== '-' && p.result.length > 0) {
+                    // 有诊断结果，标记为 completed
+                    restoredStatus = 'completed'
+                } else if (p.status === 'processing') {
+                    // 正在诊断中被中断，标记为 error
+                    restoredStatus = 'error'
+                } else if (p.status === 'waiting') {
+                    // 还未开始诊断，保持 waiting 状态，等待用户重新点击开始
+                    restoredStatus = 'waiting'
                 }
+                // 其他状态（completed/error）保持原样
 
                 return {
                     ...p,
@@ -806,20 +970,17 @@ function restoreDiagnosisState() {
                 }
             })
 
-            console.log('[批量诊断] 恢复的患者状态:', patientResults.value.map(p => ({
-                name: p.name,
-                status: p.status,
-                hasResult: !!p.result,
-                resultCount: p.result?.length || 0
-            })))
+            // ✅ 关键修复：刷新页面后，诊断任务已停止，必须设置 diagnosing=false
+            // 无论之前是否是 diagnosing 状态，因为页面刷新后 JS 执行环境已重置
+            diagnosing.value = false
+            diagnosisAborted.value = true
 
-            // 如果有数据，标记为已终止（显示清空按钮）
-            if (patientResults.value.length > 0) {
-                diagnosing.value = false
-                diagnosisAborted.value = true
-                console.log('[批量诊断] 状态恢复成功，显示清空按钮')
-                return true
-            }
+            return true
+        }
+
+        // 如果只有影像列表但没有诊断结果，也返回 true 以保留影像列表
+        if (imageItems.value.length > 0 && (!state.patientResults || state.patientResults.length === 0)) {
+            return true
         }
 
         return false
@@ -858,35 +1019,218 @@ function getProbColor(code: string): string {
     return colors[code] || '#60A5FA'
 }
 
+// ✅ 格式化报告内容，移除 Markdown 符号
+function formatReportContent(content: string): string {
+    if (!content) return ''
+
+    return content
+        // 移除 ## 标题符号
+        .replace(/^##\s+/gm, '')
+        // 移除 # 标题符号
+        .replace(/^#\s+/gm, '')
+        // 移除 ** 粗体符号
+        .replace(/\*\*/g, '')
+        // 移除 * 斜体符号
+        .replace(/\*/g, '')
+        // 移除 - 列表符号（保留换行）
+        .replace(/^-\s+/gm, '')
+        // 移除数字列表符号（如 1. 2. 3.）
+        .replace(/^\d+\.\s+/gm, '')
+        // 清理多余空行
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+}
+
+// ✅ 将报告内容转换为 HTML 格式（带样式）
+function formatReportToHtml(content: string): string {
+    if (!content) return ''
+
+    // 按 ## 标题分割
+    const sections = content.split(/##\s*/)
+
+    return sections
+        .filter(section => section.trim())
+        .map(section => {
+            section = section.trim()
+            if (!section) return ''
+
+            // 提取标题（第一行）
+            const lines = section.split('\n')
+            const title = lines[0].trim()
+            const body = lines.slice(1).join('\n').trim()
+
+            // 判断标题类型
+            let titleClass = 'report-section-title'
+            let icon = ''
+
+            if (title.includes('检查发现') || title.includes('影像学表现')) {
+                icon = '🔍'
+            } else if (title.includes('诊断印象') || title.includes('诊断结论')) {
+                icon = '📋'
+                titleClass = 'report-section-title diagnosis'
+            } else if (title.includes('建议')) {
+                icon = '💡'
+                titleClass = 'report-section-title suggestion'
+            }
+
+            // 处理正文内容，高亮重要关键词
+            let highlightedBody = body
+                // 高亮疾病名称（如：肺不张、心脏肥大等）
+                .replace(/(肺不张|心脏肥大|胸腔积液|肺浸润|实变|水肿|结节|肿块|气胸|肺炎|肺气肿|纤维化)/g, '<strong class="highlight-disease">$1</strong>')
+                // 高亮CT建议
+                .replace(/(CT|高分辨率CT|HRCT)/g, '<strong class="highlight-ct">$1</strong>')
+                // 高亮重要医学术语
+                .replace(/(支气管|纵隔|胸膜|肺门|膈肌)/g, '<strong class="highlight-term">$1</strong>')
+                // 保留换行
+                .replace(/\n/g, '<br>')
+
+            return `
+                <div class="report-section">
+                    <div class="${titleClass}">
+                        <span class="title-icon">${icon}</span>
+                        <span class="title-text">${title.replace(/[:：]$/, '')}</span>
+                    </div>
+                    <div class="report-section-body">${highlightedBody}</div>
+                </div>
+            `
+        })
+        .join('')
+}
+
 // 开始诊断
+// ✅ 打开患者选择对话框
+async function openPatientSelectDialog(imageIndex: number) {
+    currentEditImageIndex.value = imageIndex
+    patientSearchKeyword.value = ''
+    tempSelectedPatient.value = null
+
+    try {
+        // 获取所有患者
+        const res: any = await getPatientsApi({ page: 1, per_page: 100 })
+        availablePatients.value = res.data?.items || []
+        patientSelectDialogVisible.value = true
+    } catch (err) {
+        console.error('获取患者列表失败:', err)
+        ElMessage.error('获取患者列表失败')
+    }
+}
+
+// ✅ 确认选择患者
+function confirmSelectPatient() {
+    if (!tempSelectedPatient.value || currentEditImageIndex.value < 0) return
+
+    imageItems.value[currentEditImageIndex.value].selectedPatient = tempSelectedPatient.value
+    patientSelectDialogVisible.value = false
+    ElMessage.success(`已选择患者：${tempSelectedPatient.value.name}`)
+}
+
+// ✅ 打开创建患者对话框
+function openCreatePatientDialog(imageIndex: number) {
+    currentEditImageIndex.value = imageIndex
+    newPatientForm.value = {
+        patient_no: '',
+        name: '',
+        gender: 'male',
+        age: 30,
+        phone: '',
+        address: ''
+    }
+    patientCreateDialogVisible.value = true
+}
+
+// ✅ 确认创建患者
+async function confirmCreatePatient() {
+    const form = newPatientForm.value
+
+    // 验证必填字段
+    if (!form.patient_no || !form.name) {
+        ElMessage.error('请填写患者编号和姓名')
+        return
+    }
+
+    try {
+        const res: any = await createPatientApi(form)
+        const newPatient = res.data
+
+        // 关联到当前影像
+        if (currentEditImageIndex.value >= 0) {
+            imageItems.value[currentEditImageIndex.value].selectedPatient = newPatient
+        }
+
+        patientCreateDialogVisible.value = false
+        ElMessage.success(`患者创建成功：${newPatient.name}`)
+    } catch (err: any) {
+        console.error('创建患者失败:', err)
+        ElMessage.error(err.response?.data?.message || '创建患者失败')
+    }
+}
+
 async function handleStartDiagnosis() {
     if (imageItems.value.length === 0) return
+
+    // ✅ 检查是否有丢失的文件
+    const missingFiles = imageItems.value.filter(item => !item.file)
+    if (missingFiles.length > 0) {
+        ElMessage.error(`有 ${missingFiles.length} 个影像文件已丢失，请重新上传`)
+        return
+    }
+
+    // ✅ 检查是否有未关联患者的影像（仅检查有文件的影像）
+    const unassignedImages = imageItems.value.filter(item => item.file && !item.parsed && !item.selectedPatient)
+    if (unassignedImages.length > 0) {
+        ElMessage.error(`有 ${unassignedImages.length} 个影像未关联患者，无法开始检测！请先选择或创建患者`)
+        return
+    }
 
     diagnosing.value = true
     diagnosisAborted.value = false
     completedCount.value = 0
     patientResults.value = []
 
+    // ✅ 创建 AbortController 用于中断请求
+    abortController = new AbortController()
+
     try {
-        // 按患者分组
-        const patientMap = new Map<string, { info: ParsedInfo, files: ImageItem[] }>()
+        // 按患者分组（支持解析的和手动选择的）
+        const patientMap = new Map<string | number, {
+            info: ParsedInfo | null,
+            patient: any | null,
+            files: ImageItem[]
+        }>()
 
         for (const item of imageItems.value) {
-            if (!item.parsed) continue
-
-            const key = item.parsed.patientId
-            if (!patientMap.has(key)) {
-                patientMap.set(key, { info: item.parsed, files: [] })
+            // ✅ 优先使用手动选择的患者
+            if (item.selectedPatient) {
+                const key = item.selectedPatient.id
+                if (!patientMap.has(key)) {
+                    patientMap.set(key, {
+                        info: null,
+                        patient: item.selectedPatient,
+                        files: []
+                    })
+                }
+                patientMap.get(key)!.files.push(item)
             }
-            patientMap.get(key)!.files.push(item)
+            // ✅ 其次使用解析的患者信息
+            else if (item.parsed) {
+                const key = item.parsed.patientId
+                if (!patientMap.has(key)) {
+                    patientMap.set(key, {
+                        info: item.parsed,
+                        patient: null,
+                        files: []
+                    })
+                }
+                patientMap.get(key)!.files.push(item)
+            }
         }
 
         // 先为所有患者创建占位记录（显示在列表中）
         for (const [patientId, group] of patientMap) {
             patientResults.value.push({
-                name: group.info.name,
-                patient_no: patientId,
-                patient: null, // 稍后填充
+                name: group.patient?.name || group.info?.name || '未知',
+                patient_no: group.patient?.patient_no || patientId,
+                patient: group.patient, // ✅ 如果有手动选择的患者，直接使用
                 status: 'waiting', // waiting -> processing -> completed
                 result: '-',
                 confidence: '-',
@@ -896,7 +1240,7 @@ async function handleStartDiagnosis() {
                 reportContent: '',
                 generatingReport: false,
                 diagnosis_id: null,
-                clinical_info: getClinicalDisplay(group.info.clinical),
+                clinical_info: group.info ? getClinicalDisplay(group.info.clinical) : '',
                 imageItems: group.files // 保存该患者的所有影像
             })
         }
@@ -915,52 +1259,37 @@ async function handleStartDiagnosis() {
             const [patientId, group] = Array.from(patientMap.entries())[i]
             const resultIndex = i
 
-            console.log(`[批量诊断] 开始诊断患者 ${i + 1}/${patientMap.size}:`, {
-                patientId,
-                name: group.info.name,
-                resultIndex,
-                currentPatientNo: patientResults.value[resultIndex]?.patient_no
-            })
-
             try {
-                // 尝试查找已有患者
-                const patientsRes: any = await getPatientsApi({ patient_no: patientId })
-                let patient = patientsRes.data?.items?.[0]
+                // ✅ 如果已经有手动选择的患者，直接使用
+                let patient = group.patient
 
-                console.log(`[批量诊断] 患者 ${patientId} 查询结果:`, patient ? '找到' : '未找到')
-
-                // 如果没有，创建新患者
                 if (!patient) {
-                    console.log(`[批量诊断] 患者 ${patientId} 不存在，自动创建:`, {
-                        patient_no: patientId,
-                        name: group.info.name,
-                        gender: group.info.gender,
-                        age: group.info.age
-                    })
+                    // 尝试查找已有患者
+                    const patientsRes: any = await getPatientsApi({ patient_no: patientId })
+                    patient = patientsRes.data?.items?.[0]
 
-                    const createRes: any = await createPatientApi({
-                        patient_no: patientId,
-                        name: group.info.name,
-                        gender: group.info.gender,
-                        age: group.info.age,
-                        phone: '',
-                        address: ''
-                    })
-                    patient = createRes.data
-                    console.log(`[批量诊断] 患者 ${patientId} 创建成功:`, patient)
+                    // 如果没有，创建新患者
+                    if (!patient && group.info) {
+
+                        const createRes: any = await createPatientApi({
+                            patient_no: patientId,
+                            name: group.info.name,
+                            gender: group.info.gender,
+                            age: group.info.age,
+                            phone: '',
+                            address: ''
+                        })
+                        patient = createRes.data
+                    }
                 }
 
                 // 更新患者信息
                 patientResults.value[resultIndex].patient = patient
                 patientResults.value[resultIndex].status = 'processing'
 
-                console.log(`[批量诊断] 更新患者 ${patientId} 信息:`, {
-                    resultIndex,
-                    patientNo: patient?.patient_no,
-                    patientName: patient?.name,
-                    storedPatientNo: patientResults.value[resultIndex].patient_no,
-                    storedName: patientResults.value[resultIndex].name
-                })
+                // ✅ 同时启动两个加载动画：影像分析 + AI报告
+                patientResults.value[resultIndex].generatingReport = true
+                patientResults.value[resultIndex].reportContent = ''
 
                 // 保存状态
                 saveDiagnosisState()
@@ -969,6 +1298,7 @@ async function handleStartDiagnosis() {
                 await nextTick()
 
                 // 对每个影像进行诊断
+                let lastAiReport = null // ✅ 保存最后一个影像的AI报告数据
                 for (const imgItem of group.files) {
                     // 检查是否被终止
                     if (diagnosisAborted.value) {
@@ -979,26 +1309,31 @@ async function handleStartDiagnosis() {
                         const formData = new FormData()
                         formData.append('image', imgItem.file)
                         formData.append('patient_id', String(patient.id))
-                        if (group.info.symptom) {
+                        if (group.info?.symptom) {
                             formData.append('symptoms', group.info.symptom)
                         }
                         formData.append('skip_report', 'false')
 
-                        const res: any = await diagnoseSingleApi(formData)
+                        // ✅ 传递 abortController.signal 以支持中断
+                        const res: any = await diagnoseSingleApi(
+                            formData,
+                            abortController?.signal
+                        )
                         const data = res.data
+
+                        // ✅ 保存最后一个影像的AI报告数据
+                        if (data.ai_report) {
+                            lastAiReport = data.ai_report
+                        }
 
                         const topProb = data.probabilities?.[0]
                         const resultText = topProb?.probability < 0.3 ? '正常' : (topProb?.disease_name_zh || '异常')
                         const confidence = topProb ? (topProb.probability * 100).toFixed(1) : '0'
 
-                        // 构建报告内容
-                        let reportContent = ''
-                        if (data.ai_report) {
-                            reportContent = `## 检查发现\n${data.ai_report.findings || '无异常发现'}\n\n## 诊断印象\n${data.ai_report.impression || '未见明显异常'}\n\n## 建议\n${data.ai_report.recommendations || '建议定期复查'}`
-                        }
-
                         // 更新当前患者的结果（不改变status，保持processing）
                         const currentResult = patientResults.value[resultIndex].result
+
+                        // ✅ 先显示影像分析结果
                         patientResults.value[resultIndex] = {
                             ...patientResults.value[resultIndex],
                             // 累积多个影像的结果
@@ -1008,7 +1343,6 @@ async function handleStartDiagnosis() {
                             imageUrl: data.image_url || '',
                             heatmapUrl: data.heatmap_url || '',
                             diagnosis_id: data.diagnosis_id,
-                            reportContent: reportContent,
                             reportId: data.report_id
                         }
 
@@ -1019,7 +1353,17 @@ async function handleStartDiagnosis() {
 
                         // 确保UI立即更新
                         await nextTick()
-                    } catch (err) {
+                    } catch (err: any) {
+                        // ✅ 检查是否是中断错误
+                        if (err.name === 'AbortError' || err.message?.includes('abort')) {
+                            console.log('[批量诊断] 请求被中断')
+                            patientResults.value[resultIndex].status = 'error'
+                            completedCount.value++
+                            saveDiagnosisState()
+                            await nextTick()
+                            break // 跳出影像循环
+                        }
+
                         console.error('诊断失败:', err)
                         patientResults.value[resultIndex].status = 'error'
                         completedCount.value++
@@ -1039,6 +1383,23 @@ async function handleStartDiagnosis() {
                 patientResults.value[resultIndex].status = 'completed'
                 saveDiagnosisState()
                 await nextTick()
+
+                // ✅ 模拟AI报告异步生成（2-3秒延迟）
+                setTimeout(async () => {
+                    let reportContent = ''
+                    if (lastAiReport) {
+                        reportContent = `## 检查发现\n${lastAiReport.findings || '无异常发现'}\n\n## 诊断印象\n${lastAiReport.impression || '未见明显异常'}\n\n## 建议\n${lastAiReport.recommendations || '建议定期复查'}`
+                    }
+
+                    patientResults.value[resultIndex] = {
+                        ...patientResults.value[resultIndex],
+                        reportContent: reportContent,
+                        generatingReport: false // ✅ 报告生成完成
+                    }
+
+                    saveDiagnosisState()
+                    await nextTick()
+                }, 2000 + Math.random() * 1000) // 2-3秒随机延迟
             } catch (err) {
                 console.error('患者处理失败:', err)
             }
@@ -1059,6 +1420,11 @@ async function handleStartDiagnosis() {
         diagnosing.value = false
         diagnosisAborted.value = true
 
+        // ✅ 清理 AbortController
+        if (abortController) {
+            abortController = null
+        }
+
         // 最终保存状态（保持患者的原始状态，不要强制改为completed）
         saveDiagnosisState()
     }
@@ -1068,16 +1434,81 @@ async function handleStartDiagnosis() {
 onMounted(async () => {
     const hasRestored = restoreDiagnosisState()
 
-    if (hasRestored && patientResults.value.length > 0) {
-        // 成功恢复诊断结果，强制刷新UI
+    if (hasRestored) {
+        // 成功恢复状态，强制刷新UI
         await nextTick()
-        ElMessage.info(`已恢复 ${completedCount.value} 个已完成的诊断结果`)
+
+        if (diagnosing.value) {
+            // 诊断进行中被中断，提示用户重新点击开始
+            ElMessage.warning({
+                message: `⚠️ 诊断任务被中断，已恢复 ${completedCount.value}/${imageItems.value.length} 进度，请重新点击“开始检测”继续`,
+                duration: 6000,
+                showClose: true
+            })
+        } else if (patientResults.value.length > 0) {
+            // 有诊断结果
+            ElMessage.success(`✅ 已恢复 ${completedCount.value} 个患者的诊断结果`)
+
+            // 检查是否有缺失的文件
+            const missingFiles = imageItems.value.filter(item => !item.file).length
+            if (missingFiles > 0) {
+                ElMessage.info({
+                    message: `ℹ️ 原始影像文件需要重新上传（浏览器安全限制），但诊断结果已保留`,
+                    duration: 5000,
+                    showClose: true
+                })
+            }
+        } else if (imageItems.value.length > 0) {
+            // 只有影像列表，未开始诊断
+            ElMessage.info(`已恢复 ${imageItems.value.length} 个影像，请重新上传文件后开始诊断`)
+        }
+    } else {
+        // 无状态可恢复
+    }
+})
+
+// ✅ 路由守卫 - 防止诊断中切换页面导致数据丢失
+import { onBeforeRouteLeave } from 'vue-router'
+
+onBeforeRouteLeave((to, from, next) => {
+    if (diagnosing.value && !diagnosisAborted.value) {
+        ElMessageBox.confirm(
+            '诊断任务正在进行中，离开页面将中断诊断。是否继续？',
+            '警告',
+            {
+                confirmButtonText: '继续离开',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }
+        ).then(() => {
+            // 用户确认离开，中断诊断
+            diagnosisAborted.value = true
+            if (abortController) {
+                (abortController as AbortController).abort()
+            }
+            saveDiagnosisState()
+            next()
+        }).catch(() => {
+            // 用户取消离开
+            next(false)
+        })
+    } else {
+        next()
     }
 })
 
 // 页面卸载时保存状态
 onUnmounted(() => {
-    if (diagnosing.value) {
+    // ✅ 如果诊断正在进行，中断所有请求
+    if (diagnosing.value && !diagnosisAborted.value) {
+        diagnosisAborted.value = true
+        if (abortController) {
+            (abortController as AbortController).abort()
+        }
+    }
+
+    // 保存状态
+    if (diagnosing.value || patientResults.value.length > 0) {
         saveDiagnosisState()
     }
 })
@@ -1790,6 +2221,23 @@ onUnmounted(() => {
                         }
                     }
 
+                    @keyframes progress-indeterminate {
+                        0% {
+                            width: 0%;
+                            margin-left: 0%;
+                        }
+
+                        50% {
+                            width: 50%;
+                            margin-left: 25%;
+                        }
+
+                        100% {
+                            width: 0%;
+                            margin-left: 100%;
+                        }
+                    }
+
                     .prob-card {
                         .prob-list {
                             display: flex;
@@ -2010,19 +2458,228 @@ onUnmounted(() => {
                             }
                         }
 
+                        // ✅ 报告加载动画
+                        .report-loading {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            height: 100%;
+                            gap: 20px;
+                            padding: 40px 20px;
+
+                            .loading-spinner {
+                                position: relative;
+                                width: 100px;
+                                height: 100px;
+
+                                .spinner-ring {
+                                    position: absolute;
+                                    border-radius: 50%;
+                                    border: 3px solid transparent;
+                                    animation: spin 1.5s linear infinite;
+
+                                    &:nth-child(1) {
+                                        width: 100px;
+                                        height: 100px;
+                                        border-top-color: var(--primary);
+                                        animation-duration: 1.5s;
+                                    }
+
+                                    &:nth-child(2) {
+                                        width: 75px;
+                                        height: 75px;
+                                        top: 12.5px;
+                                        left: 12.5px;
+                                        border-right-color: var(--purple);
+                                        animation-duration: 2s;
+                                        animation-direction: reverse;
+                                    }
+
+                                    &:nth-child(3) {
+                                        width: 50px;
+                                        height: 50px;
+                                        top: 25px;
+                                        left: 25px;
+                                        border-bottom-color: var(--success);
+                                        animation-duration: 2.5s;
+                                    }
+                                }
+
+                                .spinner-icon {
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    color: var(--primary);
+
+                                    .rotating-icon {
+                                        animation: rotate-icon 3s ease-in-out infinite;
+                                    }
+                                }
+                            }
+
+                            .loading-title {
+                                font-size: 18px;
+                                font-weight: 600;
+                                color: var(--text-primary);
+                                margin: 0;
+                            }
+
+                            .loading-desc {
+                                font-size: 13px;
+                                color: var(--text-secondary);
+                                margin: 0;
+                                text-align: center;
+                            }
+
+                            .loading-progress {
+                                width: 100%;
+                                max-width: 300px;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                gap: 8px;
+
+                                .progress-bar {
+                                    width: 100%;
+                                    height: 4px;
+                                    background: var(--bg-tertiary);
+                                    border-radius: 2px;
+                                    overflow: hidden;
+
+                                    .progress-fill {
+                                        height: 100%;
+                                        background: linear-gradient(90deg, var(--primary), var(--purple));
+                                        border-radius: 2px;
+                                        animation: progress-indeterminate 2s ease-in-out infinite;
+                                    }
+                                }
+
+                                .progress-text {
+                                    font-size: 12px;
+                                    color: var(--text-muted);
+                                }
+                            }
+                        }
+
+                        // ✅ 等待状态
+                        .report-waiting {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            height: 100%;
+                            gap: 16px;
+                            padding: 40px 20px;
+
+                            p {
+                                font-size: 16px;
+                                font-weight: 500;
+                                color: var(--text-primary);
+                                margin: 0;
+                            }
+
+                            .hint-text {
+                                font-size: 13px;
+                                color: var(--text-secondary);
+                            }
+                        }
+
                         .report-content {
-                            pre {
+                            .report-text {
                                 font-family: 'Microsoft YaHei', sans-serif;
                                 font-size: 13px;
                                 line-height: 1.8;
                                 color: var(--text-secondary);
-                                white-space: pre-wrap;
                                 word-break: break-all;
-                                margin: 0;
-                                padding: 16px;
-                                background: var(--bg-tertiary);
-                                border: 1px solid var(--glass-border);
-                                border-radius: var(--radius-lg);
+
+                                // ✅ 报告区块
+                                .report-section {
+                                    margin-bottom: 24px;
+
+                                    &:last-child {
+                                        margin-bottom: 0;
+                                    }
+                                }
+
+                                // ✅ 标题样式
+                                .report-section-title {
+                                    font-size: 20px;
+                                    font-weight: 800;
+                                    color: var(--text-primary);
+                                    margin-bottom: 16px;
+                                    padding: 12px 16px;
+                                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+                                    border-left: 5px solid var(--primary);
+                                    border-radius: 8px;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                    letter-spacing: 1px;
+
+                                    .title-icon {
+                                        font-size: 22px;
+                                        flex-shrink: 0;
+                                    }
+
+                                    .title-text {
+                                        font-size: 20px;
+                                        font-weight: 800;
+                                        letter-spacing: 1.5px;
+                                    }
+
+                                    // 诊断印象标题（橙色）
+                                    &.diagnosis {
+                                        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
+                                        border-left-color: var(--orange);
+                                    }
+
+                                    // 建议标题（绿色）
+                                    &.suggestion {
+                                        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.05) 100%);
+                                        border-left-color: var(--success);
+                                    }
+                                }
+
+                                // ✅ 正文样式
+                                .report-section-body {
+                                    padding: 0 14px;
+                                    text-align: justify;
+
+                                    // 高亮疾病名称（红色）
+                                    .highlight-disease {
+                                        color: #FF4444;
+                                        font-weight: 700;
+                                        font-size: 14px;
+                                        background: rgba(255, 68, 68, 0.15);
+                                        padding: 2px 8px;
+                                        border-radius: 4px;
+                                        border: 1px solid rgba(255, 68, 68, 0.3);
+                                    }
+
+                                    // 高亮CT（蓝色）
+                                    .highlight-ct {
+                                        color: #00AAFF;
+                                        font-weight: 700;
+                                        font-size: 14px;
+                                        background: rgba(0, 170, 255, 0.15);
+                                        padding: 2px 8px;
+                                        border-radius: 4px;
+                                        border: 1px solid rgba(0, 170, 255, 0.3);
+                                    }
+
+                                    // 高亮医学术语（紫色）
+                                    .highlight-term {
+                                        color: #AA55FF;
+                                        font-weight: 700;
+                                        font-size: 14px;
+                                        background: rgba(170, 85, 255, 0.15);
+                                        padding: 2px 8px;
+                                        border-radius: 4px;
+                                        border: 1px solid rgba(170, 85, 255, 0.3);
+                                    }
+                                }
                             }
                         }
 
@@ -2034,6 +2691,18 @@ onUnmounted(() => {
                             height: 100%;
                             gap: 16px;
                             padding: 40px 20px;
+
+                            p {
+                                font-size: 16px;
+                                font-weight: 500;
+                                color: var(--text-primary);
+                                margin: 0;
+                            }
+
+                            .hint-text {
+                                font-size: 13px;
+                                color: var(--text-secondary);
+                            }
 
                             .loading-spinner {
                                 position: relative;
@@ -2129,30 +2798,57 @@ onUnmounted(() => {
                                 }
                             }
                         }
+
+                        // ✅ 内联加载提示（小加载动画，不遮挡）
+                        .report-loading-inline {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 12px 16px;
+                            background: var(--bg-tertiary);
+                            border: 1px solid var(--glass-border);
+                            border-radius: var(--radius-md);
+                            margin-bottom: 16px;
+
+                            .el-icon {
+                                color: var(--primary);
+                            }
+
+                            span {
+                                font-size: 13px;
+                                color: var(--text-secondary);
+                            }
+                        }
+
+                        .report-section {
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                        }
                     }
                 }
             }
+        }
 
-            // 底部导航
-            .bottom-nav {
+        // 底部导航
+        .bottom-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+
+            .nav-info {
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
-                padding: 12px 16px;
-                background: var(--card-bg);
-                border: 1px solid var(--glass-border);
-                border-radius: var(--radius-xl);
+                gap: 16px;
 
-                .nav-info {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-
-                    .nav-text {
-                        font-size: 13px;
-                        color: var(--text-secondary);
-                        font-weight: 500;
-                    }
+                .nav-text {
+                    font-size: 13px;
+                    color: var(--text-secondary);
+                    font-weight: 500;
                 }
             }
         }
@@ -2174,5 +2870,96 @@ onUnmounted(() => {
     100% {
         margin-left: 100%;
     }
+}
+
+/* ✅ 患者选择区域样式 */
+.patient-select {
+    margin-top: 8px;
+}
+
+.patient-select .el-alert {
+    margin-bottom: 8px;
+    padding: 6px 8px;
+}
+
+/* ✅ 文件丢失提示样式 */
+.file-missing-alert {
+    margin-top: 8px;
+}
+
+.file-missing-alert .el-alert {
+    margin-bottom: 8px;
+    padding: 6px 8px;
+}
+
+.select-actions {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.select-actions .el-button {
+    flex: 1;
+    font-size: 11px;
+}
+
+.selected-patient-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--el-color-primary-light-9);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--el-color-primary);
+}
+
+/* ✅ 患者选择对话框样式 */
+.patient-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid var(--el-border-color);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.patient-option:hover {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+}
+
+.patient-option.selected {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+}
+
+.patient-option-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.patient-option-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.patient-option-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+}
+
+.patient-option-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
 }
 </style>

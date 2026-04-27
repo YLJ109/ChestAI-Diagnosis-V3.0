@@ -1,10 +1,11 @@
 /** 诊断API */
 import http from './index'
 
-export const diagnoseSingleApi = (formData: FormData) =>
+export const diagnoseSingleApi = (formData: FormData, signal?: AbortSignal) =>
   http.post('/diagnose/single', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 120000,
+    signal // ✅ 支持中断信号
   })
 
 export const getDiagnosisApi = (id: number) =>
