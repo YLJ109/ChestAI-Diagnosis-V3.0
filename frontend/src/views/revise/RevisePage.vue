@@ -369,18 +369,85 @@ async function openReviseDialog(row: ApprovalItem) {
     currentApproval.value = row
     revisedReport.value = ''
     reviseNotes.value = ''
+    aiReportContent.value = ''
 
-    // 获取AI报告内容
+    // 获取审批详情（包含报告和患者信息）
     try {
         const res: any = await http.get(`/approvals/${row.id}`)
-        if (res.code === 200 && res.data.report) {
-            aiReportContent.value = res.data.report.ai_generated_content ||
-                res.data.report.findings || ''
-            // 预填充为当前报告内容
-            revisedReport.value = aiReportContent.value
+        console.log('[诊断修正] API返回数据:', res)
+
+        if (res.code === 200) {
+            const data = res.data
+            console.log('[诊断修正] 审批详情data:', data)
+            console.log('[诊断修正] data.report:', data.report)
+            console.log('[诊断修正] data.report_id:', data.report_id)
+            console.log('[诊断修正] data.diagnosis:', data.diagnosis)
+            console.log('[诊断修正] data.probabilities:', data.probabilities)
+            console.log('[诊断修正] data.diagnosis?.disease_probabilities:', data.diagnosis?.disease_probabilities)
+
+            // ✅ 提取患者信息
+            if (data.patient) {
+                currentApproval.value.patient_name = data.patient.name
+                currentApproval.value.patient_no = data.patient.patient_no
+                currentApproval.value.patient_gender = data.patient.gender
+                currentApproval.value.patient_age = data.patient.age
+                console.log('[诊断修正] 患者信息:', data.patient)
+            }
+
+            // ✅ 提取AI报告内容
+            if (data.report) {
+                // 优先使用报告数据
+                aiReportContent.value = data.report.ai_generated_content ||
+                    data.report.findings ||
+                    data.report.content || ''
+                console.log('[诊断修正] 使用报告数据')
+            } else if (data.diagnosis && data.probabilities && data.probabilities.length > 0) {
+                // ✅ 降级方案：该诊断尚未生成完整报告，显示疾病概率作为参考
+                // 提供报告模板，让医生可以手动填写完整报告
+                const topDiseases = data.probabilities
+                    .sort((a: any, b: any) => b.probability - a.probability)
+                    .slice(0, 5)
+
+                if (topDiseases.length > 0) {
+                    // 生成报告模板，包含疾病概率作为参考
+                    aiReportContent.value = `【影像学表现】
+（请根据影像资料和AI诊断结果，描述影像学表现）
+
+AI辅助诊断参考：
+${topDiseases.map((d: any, i: number) =>
+                        `  ${i + 1}. ${d.disease_name_zh} (${(d.probability * 100).toFixed(1)}%)`
+                    ).join('\n')}
+
+【诊断结论】
+（请根据影像学表现和AI参考结果，给出诊断结论）
+
+【建议】
+（请给出临床建议）`
+                    console.log('[诊断修正] 生成报告模板（含疾病概率参考）', topDiseases)
+                } else {
+                    // 如果连疾病概率都没有，提供空白模板
+                    aiReportContent.value = `【影像学表现】
+（请描述影像学表现）
+
+【诊断结论】
+（请给出诊断结论）
+
+【建议】
+（请给出临床建议）`
+                    console.warn('[诊断修正] 无疾病概率数据，生成空白模板')
+                }
+            } else {
+                console.warn('[诊断修正] 未找到报告或诊断数据')
+            }
+
+            // 预填充为当前内容
+            if (aiReportContent.value) {
+                revisedReport.value = aiReportContent.value
+            }
         }
     } catch (e) {
-        console.error('获取报告失败', e)
+        console.error('获取审批详情失败', e)
+        ElMessage.error('获取审批详情失败')
     }
 
     showReviseDialog.value = true

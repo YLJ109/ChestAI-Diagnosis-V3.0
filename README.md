@@ -9,12 +9,13 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776ab?logo=python)](https://python.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6?logo=typescript)](https://typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/YLJ109/ChestAI-Diagnosis-V3.0?style=social)](https://github.com/YLJ109/ChestAI-Diagnosis-V3.0)
 
 **胸部 X 光 AI 智能辅助诊断系统** — 基于 DenseNet-121 + ONNX 加速推理 + 大语言模型的全栈医学影像 AI 平台
 
 [功能特性](#功能特性) · [系统截图](#系统截图) · [快速开始](#快速开始) · [部署指南](#部署指南) · [API 文档](#api-接口文档)
 
-<img src="ProjectImage/批量诊断-检测结果与生成报告.png" alt="登录界面" width="900"/>
+<img src="ProjectImage/医护人员-批量诊断-检测完成.png" alt="批量诊断" width="900"/>
 
 </div>
 
@@ -59,6 +60,8 @@
 | **临床辅助** | 智能分诊 + AI 医学咨询 + 诊断审批工作流 |
 | **易部署** | SQLite 零配置数据库，Docker 一键启动，无需额外基础设施 |
 | **安全性** | JWT 认证 + RBAC 权限 + AES 加密存储 API Key + 审计日志 |
+| **患者门户** | 完整患者终端系统，PC+移动端自适应，人脸识别/二维码登录 |
+| **用户体验** | 影像分析立即显示，AI报告异步生成，无需等待 |
 
 ### 支持检测的 14 种胸部疾病
 
@@ -103,17 +106,24 @@
 | **布局** | 单一布局 | 业务端 + 管理端双布局分离 |
 | **文件命名** | 手动录入 | 智能解析 (`P编号-姓名-性别-年龄-症状-序号.png`) |
 | **数据库锁** | 频繁死锁 | 自动重试机制 + WAL 模式优化 |
+| **患者门户** | 无 | 完整患者终端系统（PC端） |
+| **人脸识别** | 无 | 高清摄像头自动识别登录（1280x720 HD） |
+| **二维码登录** | 无 | 手机扫码快速登录 |
+| **诊断修正** | 无 | 已审批诊断二次修正 + 重新生成报告 |
+| **统一打印** | 分散在各模块 | 跨模块统一打印入口 + 患者照片/二维码集成 |
+| **移动端适配** | 无 | 响应式设计（规划中） |
+| **渲染优化** | 等待全部完成 | 影像分析立即显示，AI报告异步生成 |
 
 ---
 
 ## 功能特性
 
-### 业务端 (7 大功能模块)
+### 业务端 (10 大功能模块)
 
 #### 1. 数据看板
 
 <p align="center">
-  <img src="ProjectImage/数据看板.png" alt="数据看板" width="800"/>
+  <img src="ProjectImage/医护人员-数据看板.png" alt="数据看板" width="800"/>
 </p>
 
 - 诊断统计概览：今日 / 本周 / 本月 / 总计 诊断量趋势
@@ -125,8 +135,8 @@
 #### 2. 诊断中心
 
 <p align="center">
-  <img src="ProjectImage/诊断中心-空.png" alt="诊断中心" width="280"/>
-  <img src="ProjectImage/历史诊断.png" alt="检测结果" width="280"/>
+  <img src="ProjectImage/医护人员-诊断中心.png" alt="诊断中心" width="280"/>
+  <img src="ProjectImage/医护人员-历史诊断.png" alt="检测结果" width="280"/>
 </p>
 
 - 拖拽或点击上传胸部 X 光影像（PNG / JPG / JPEG）
@@ -149,7 +159,7 @@
 #### 3. 批量诊断
 
 <p align="center">
-  <img src="ProjectImage/批量诊断-空.png" alt="批量诊断" width="800"/>
+  <img src="ProjectImage/医护人员-批量诊断.png" alt="批量诊断" width="800"/>
 </p>
 
 - 一次选择多张影像，每张独立患者卡片展示
@@ -163,7 +173,7 @@
 #### 4. 智能分诊
 
 <p align="center">
-  <img src="ProjectImage/智能分诊-空.png" alt="智能分诊" width="800"/>
+  <img src="ProjectImage/医护人员-智能分诊.png" alt="智能分诊" width="800"/>
 </p>
 
 - **15+ 种常见症状**多选：咳嗽 / 胸痛 / 呼吸困难 / 咯血 / 发热 / 咳痰等
@@ -178,7 +188,7 @@
 #### 5. AI 医学咨询
 
 <p align="center">
-  <img src="ProjectImage/AI咨询-空.png" alt="AI咨询" width="800"/>
+  <img src="ProjectImage/医护人员-AI咨询.png" alt="AI咨询" width="800"/>
 </p>
 
 - **SSE 流式对话** — 实时打字效果，用户体验流畅
@@ -196,7 +206,7 @@
 - Markdown 格式渲染回复内容
 - 保留最近 10 轮对话上下文
 
-#### 6. 诊断历史 & 7. 诊断审批
+#### 6. 诊断历史 & 7. 诊断审批 & 8. 诊断修正
 
 **诊断历史：**
 - 所有诊断记录列表（支持分页）
@@ -209,6 +219,96 @@
 - 审核操作：通过 / 驳回（含备注）
 - 审批状态流转追踪
 
+**诊断修正（新增）：**
+- 对已审批的诊断进行二次修正
+- 支持重新生成 AI 报告
+- 完整的修改记录追溯
+- 标准医疗报告格式模板（影像学表现/诊断结论/建议）
+
+#### 9. 个人信息管理 & 10. 打印报告
+
+**个人信息：**
+- 医护人员个人资料查看与编辑
+- 密码修改
+- 执业信息维护
+
+**统一打印报告：**
+- 跨模块统一打印入口
+- 患者照片 + 二维码自动集成
+- Base64 图片编码确保打印窗口正常显示
+- 医护端模板完整保留主题设置
+- 支持从诊断中心、批量诊断、历史诊断等多处调用
+
+---
+
+### 患者门户 (8 大功能模块)
+
+> **全新患者终端系统** — 支持 PC 端和移动端自适应，提供完整的自助医疗服务
+
+#### 1. 患者登录与注册
+
+**多种登录方式：**
+- **人脸识别登录**（新增）：高清摄像头自动识别，无需手动操作
+  - 1280x720 HD 高清分辨率
+  - 每 300ms 自动检测人脸
+  - 智能频率切换（检测到人脸加速，未检测减速）
+  - 相似度阈值 0.5，确保准确性
+- **二维码扫码登录**（新增）：手机扫描二维码快速登录
+- **传统账号密码登录**：手机号/身份证号 + 密码
+
+**患者注册：**
+- 完整的个人信息录入
+- 既往病史、过敏史记录
+- 紧急联系人信息
+
+#### 2. 患者主页
+
+- 个性化欢迎界面
+- 快速访问入口：智能分诊、AI咨询、报告查询
+- 最近就诊记录展示
+- 健康小贴士推荐
+
+#### 3. 智能分诊
+
+- **15+ 种常见症状**多选：咳嗽 / 胸痛 / 呼吸困难 / 咯血 / 发热等
+- **4 级严重程度**分级：轻微 / 中度 / 严重 / 危急
+- **5 项生命体征**录入：体温 / 心率 / 血压 / 血氧 / 呼吸频率
+- AI 分诊评估结果：
+  - 推荐科室（呼吸科 / 心内科 / 胸外科 / 急诊科）
+  - 紧急程度判定（普通 / 严重 / 危急）
+  - 分诊依据说明
+- 分诊记录历史查询
+
+#### 4. AI 医学咨询
+
+- **SSE 流式对话** — 实时打字效果，用户体验流畅
+- **5 种医生角色**切换：放射科专家 / 呼吸科专家 / 胸外科专家 / 急诊科专家 / 全科顾问
+- 会话管理：新建 / 切换 / 删除会话
+- Markdown 格式渲染回复内容
+- 保留最近 10 轮对话上下文
+
+#### 5. 诊断报告查询
+
+- 个人所有诊断报告列表（分页显示）
+- 按时间范围筛选
+- 报告详情查看：检测结果 + 热力图 + AI 生成报告
+- PDF 在线预览 / 下载
+- **权限控制**：患者只能查看自己的报告，无法查看他人数据
+
+#### 6. 就诊历史
+
+- 完整就诊记录时间线
+- 历次诊断结果对比
+- 疾病发展趋势分析
+- 检查影像资料归档
+
+#### 7. 统一打印报告
+
+- 患者照片 + 二维码自动集成
+- Base64 图片编码确保打印窗口正常显示
+- 支持从报告列表、历史记录多处调用
+- 打印模板适配 A4 纸张
+
 ---
 
 ### 管理端 (7 大功能模块)
@@ -219,9 +319,9 @@
   <img src="ProjectImage/后台管理-患者管理.png" alt="患者管理" width="280"/>
 </p>
 <p align="center">
-  <img src="ProjectImage/后台管理-权重文件管理.png" alt="权重管理" width="280"/>
-  <img src="ProjectImage/后台管理-大模型API管理.png" alt="LLM管理" width="280"/>
-  <img src="ProjectImage/后台管理-审计日志.png" alt="审计日志" width="280"/>
+  <img src="ProjectImage/后台管理-权重管理.png" alt="权重管理" width="280"/>
+  <img src="ProjectImage/后台管理-API管理.png" alt="LLM管理" width="280"/>
+  <img src="ProjectImage/后台管理-系统日志.png" alt="审计日志" width="280"/>
 </p>
 <p align="center">
   <img src="ProjectImage/后台管理-系统设置.png" alt="系统设置" width="500"/>
@@ -253,17 +353,45 @@
 
 ## 系统截图
 
-### 业务端截图
+### 医护人员端截图
+
+#### 登录与认证
 
 | 页面 | 截图 |
 |:-----|:-----|
-| 登录界面 | ![登录](ProjectImage/登录界面.png) |
-| 数据看板 | ![数据看板](ProjectImage/数据看板.png) |
-| 诊断中心 | ![诊断中心](ProjectImage/诊断中心-空.png) |
-| 批量诊断 | ![批量诊断](ProjectImage/批量诊断-空.png) |
-| 智能分诊 | ![智能分诊](ProjectImage/智能分诊-空.png) |
-| AI 咨询 | ![AI咨询](ProjectImage/AI咨询-空.png) |
-| 历史诊断 | ![历史诊断](ProjectImage/历史诊断.png) |
+| 登录界面 | ![登录](ProjectImage/医护人员-登录界面.png) |
+| 人脸识别登录 | ![人脸识别](ProjectImage/医护人员-登录界面-人脸识别.png) |
+| 识别中 | ![识别中](ProjectImage/医护人员-登录界面-人脸识别中.png) |
+
+#### 核心功能
+
+| 页面 | 截图 |
+|:-----|:-----|
+| 数据看板 | ![数据看板](ProjectImage/医护人员-数据看板.png) |
+| 诊断中心 | ![诊断中心](ProjectImage/医护人员-诊断中心.png) |
+| 选择患者 | ![选择患者](ProjectImage/医护人员-诊断中心-选择患者.png) |
+| 检测完成 | ![检测完成](ProjectImage/医护人员-诊断中心-检测完成.png) |
+| 批量诊断 | ![批量诊断](ProjectImage/医护人员-批量诊断.png) |
+| 选择患者 (批量) | ![选择患者](ProjectImage/医护人员-批量诊断-选择患者.png) |
+| 检测完成 (批量) | ![检测完成](ProjectImage/医护人员-批量诊断-检测完成.png) |
+| 智能分诊 | ![智能分诊](ProjectImage/医护人员-智能分诊.png) |
+| 选择症状 | ![选择症状](ProjectImage/医护人员-智能分诊-选择症状.png) |
+| 诊断结果 | ![诊断结果](ProjectImage/医护人员-智能分诊-诊断结果.png) |
+| AI 咨询 | ![AI咨询](ProjectImage/医护人员-AI咨询.png) |
+| 历史诊断 | ![历史诊断](ProjectImage/医护人员-历史诊断.png) |
+| 诊断审批 | ![诊断审批](ProjectImage/医护人员-诊断审批.png) |
+| 诊断修正 | ![诊断修正](ProjectImage/医护人员-诊断修正.png) |
+
+### 患者终端截图
+
+| 页面 | 截图 |
+|:-----|:-----|
+| 登录界面 | ![登录](ProjectImage/患者终端-登陆界面.png) |
+| 主页 | ![主页](ProjectImage/患者终端-主页.png) |
+| 智能分诊 | ![智能分诊](ProjectImage/患者终端-智能分诊.png) |
+| AI 咨询 | ![AI咨询](ProjectImage/患者终端-AI咨询.png) |
+| 打印报告 | ![打印报告](ProjectImage/患者终端-打印报告.png) |
+| 打印界面 | ![打印界面](ProjectImage/患者终端-打印报告界面.png) |
 
 ### 管理端截图
 
@@ -272,9 +400,9 @@
 | 系统概览 | ![系统概览](ProjectImage/后台管理-系统概览.png) |
 | 用户管理 | ![用户管理](ProjectImage/后台管理-用户管理.png) |
 | 患者管理 | ![患者管理](ProjectImage/后台管理-患者管理.png) |
-| 权重管理 | ![权重管理](ProjectImage/后台管理-权重文件管理.png) |
-| 大模型 API | ![LLM管理](ProjectImage/后台管理-大模型API管理.png) |
-| 审查日志 | ![审计日志](ProjectImage/后台管理-审计日志.png) |
+| 权重管理 | ![权重管理](ProjectImage/后台管理-权重管理.png) |
+| API 管理 | ![API管理](ProjectImage/后台管理-API管理.png) |
+| 系统日志 | ![审计日志](ProjectImage/后台管理-系统日志.png) |
 | 系统设置 | ![系统设置](ProjectImage/后台管理-系统设置.png) |
 
 ---
@@ -411,7 +539,7 @@ backend/
 ├── init_db.py                  # 数据库初始化: 建表 + 种子数据 (8用户+10患者+设置)
 ├── requirements.txt            # Python 依赖清单
 │
-├── api/                        # ★ API 路由层 (15 个 Blueprint)
+├── api/                        # ★ API 路由层 (17 个 Blueprint)
 │   ├── auth.py                 #   认证: 登录/登出/修改密码/当前用户
 │   ├── users.py                #   用户: 列表/创建/编辑/删除/重置密码/偏好
 │   ├── patients.py             #   患者: 列表/创建/编辑/删除/关联诊断
@@ -426,7 +554,9 @@ backend/
 │   ├── audit.py                #   审计: 日志查询/操作类型/清理
 │   ├── settings.py             #   设置: 读取/修改系统参数
 │   ├── dashboard.py            #   看板: 统计聚合/图表数据
-│   └── approvals.py            #   审批: 待审列表/通过/驳回/历史
+│   ├── approvals.py            #   审批: 待审列表/通过/驳回/历史
+│   ├── face_auth.py            #   人脸识别: 注册/登录/特征提取/匹配
+│   └── patient_portal.py       #   患者门户: 报告查询/历史记录/二维码生成
 │
 ├── models/                     # ★ ORM 数据模型 (14 张表)
 │   ├── user.py                 #   users — 用户账号
@@ -479,14 +609,14 @@ frontend/
 │   ├── main.ts                 # 应用入口: 注册 Vue/Pinia/Router/ElementPlus/图标
 │   ├── App.vue                 # 根组件: <router-view />
 │   │
-│   ├── router/index.ts         # 路由: 7业务页 + 7管理页 + 登录 + 守卫逻辑
+│   ├── router/index.ts         # 路由: 10业务页 + 7管理页 + 9患者门户 + 登录/注册 + 守卫逻辑
 │   │
 │   ├── stores/                 # Pinia 状态管理
 │   │   ├── auth.ts             #     认证: user/token/role/login/logout
 │   │   ├── app.ts              #     应用: sidebarCollapsed/theme/toggleSidebar
 │   │   └── consultation.ts     #     咨询: sessions/currentSessionId
 │   │
-│   ├── api/                    # API 服务层 (Axios 封装, 16 个模块)
+│   ├── api/                    # API 服务层 (Axios 封装, 18 个模块)
 │   │   ├── index.ts            #     Axios 实例 + 请求/响应拦截器
 │   │   ├── auth.ts             #     认证 API
 │   │   ├── users.ts            #     用户管理 API
@@ -497,27 +627,48 @@ frontend/
 │   │   ├── triage.ts           #     智能分诊 API
 │   │   ├── chat.ts             #     AI 咨询 API
 │   │   ├── approvals.ts        #     审批 API
+│   │   ├── revise.ts           #     诊断修正 API
 │   │   ├── model-weights.ts    #     权重管理 API
 │   │   ├── llm-configs.ts      #     LLM 配置 API
 │   │   ├── llm.ts              #     LLM 调用 API
 │   │   ├── audit.ts            #     审计日志 API
 │   │   ├── settings.ts         #     系统设置 API
-│   │   └── dashboard.ts        #     数据看板 API
+│   │   ├── dashboard.ts        #     数据看板 API
+│   │   ├── face.ts             #     人脸识别 API
+│   │   └── patient-portal.ts   #     患者门户 API
 │   │
 │   ├── layouts/                # 布局组件
 │   │   ├── MainLayout.vue      #     业务端: 侧边栏 + 顶栏 + 内容 + 密码弹窗
 │   │   └── AdminLayout.vue     #     管理端: 侧边栏 + 顶栏 + 内容
 │   │
-│   ├── views/                  # 页面组件 (15 个)
-│   │   ├── login/LoginPage.vue         # 玻璃拟态深色登录
-│   │   ├── dashboard/DashboardPage.vue # ECharts 数据看板
-│   │   ├── diagnose/DiagnosePage.vue   # 单张上传+检测+报告
-│   │   ├── batch/BatchPage.vue         # 多选+批量+进度
-│   │   ├── triage/TriagePage.vue       # 症状+体征+分诊
-│   │   ├── chat/ChatPage.vue           # SSE 流式对话
-│   │   ├── history/HistoryPage.vue     # 诊断记录列表
-│   │   ├── approval/ApprovalPage.vue   # 审批工作流
-│   │   └── admin/                     # 7 个管理页面
+│   ├── views/                  # 页面组件 (26+ 个)
+│   │   ├── login/                      # 登录注册模块
+│   │   │   ├── LoginPage.vue           #   医护登录（玻璃拟态深色）
+│   │   │   ├── PatientLoginPage.vue    #   患者登录（支持人脸识别/二维码）
+│   │   │   └── PatientRegisterPage.vue #   PC端患者注册
+│   │   │
+│   │   ├── patient/                    # 患者门户模块（9 个页面）
+│   │   │   ├── MainPage.vue            #   患者门户主布局
+│   │   │   ├── HomePage.vue            #   患者主页
+│   │   │   ├── ReportListPage.vue      #   报告列表
+│   │   │   ├── HistoryPage.vue         #   就诊历史
+│   │   │   ├── TriagePage.vue          #   智能分诊
+│   │   │   ├── ChatPage.vue            #   AI咨询
+│   │   │   ├── ReportPrintPage.vue     #   统一打印报告
+│   │   │   ├── FaceLoginPage.vue       #   人脸识别登录
+│   │   │   └── QrCodeLogin.vue         #   二维码扫码登录
+│   │   │
+│   │   ├── dashboard/DashboardPage.vue # 数据看板（ECharts）
+│   │   ├── diagnose/DiagnosePage.vue   # 诊断中心（单张上传+检测+报告）
+│   │   ├── batch/BatchDiagnosePage.vue # 批量诊断（多选+进度+三列Grid布局）
+│   │   ├── triage/TriagePage.vue       # 智能分诊（症状+体征+评估）
+│   │   ├── chat/ChatPage.vue           # AI咨询（SSE流式对话）
+│   │   ├── history/HistoryPage.vue     # 诊断历史（记录列表+详情）
+│   │   ├── approval/ApprovalPage.vue   # 诊断审批（工作流管理）
+│   │   ├── revise/RevisePage.vue       # 诊断修正（二次修正+重新生成报告）
+│   │   ├── profile/ProfilePage.vue     # 个人信息（资料编辑+密码修改）
+│   │   │
+│   │   └── admin/                      # 管理端模块（7 个页面）
 │   │       ├── OverviewPage.vue        #   系统概览
 │   │       ├── UsersPage.vue           #   用户管理
 │   │       ├── PatientsPage.vue        #   患者管理
@@ -667,7 +818,7 @@ frontend/
 | 错误响应格式 | `{ code: 4xx/5xx, message: "错误描述" }` |
 | 分页参数 | `?page=1&size=20` → `{ total, page, size, items: [] }` |
 
-### 接口总览 (15 个模块, 60+ 接口)
+### 接口总览 (17 个模块, 80+ 接口)
 
 #### 认证 `/auth`
 
@@ -754,6 +905,36 @@ frontend/
 | POST | `/approvals/:id/reject` | 驳回审批 |
 | GET | `/approvals/history` | 审批历史 |
 
+#### 诊断修正 `/revise`
+
+| 方法 | 路径 | 说明 |
+|:-----|:-----|:-----|
+| GET | `/revise/list` | 待修正诊断列表 |
+| GET | `/revise/:id/detail` | 诊断详情（含报告） |
+| POST | `/revise/:id/submit` | 提交修正结果 |
+| POST | `/revise/:id/regenerate-report` | 重新生成 AI 报告 |
+
+#### 人脸识别 `/face-auth`
+
+| 方法 | 路径 | 说明 | 认证 |
+|:-----|:-----|:-----|:-----|
+| POST | `/face-auth/register` | 注册人脸特征 | 是 |
+| POST | `/face-auth/login` | 人脸识别登录 | 否 |
+| GET | `/face-auth/check-status` | 检查患者是否已注册人脸 | 否 |
+| POST | `/face-auth/extract-features` | 提取人脸特征 | 是 |
+| POST | `/face-auth/match` | 人脸特征匹配 | 否 |
+| DELETE | `/face-auth/delete` | 删除人脸数据 | 是 |
+
+#### 患者门户 `/patient-portal`
+
+| 方法 | 路径 | 说明 | 认证 |
+|:-----|:-----|:-----|:-----|
+| GET | `/patient-portal/reports` | 患者报告列表 | 是 |
+| GET | `/patient-portal/reports/:id` | 报告详情 | 是 |
+| GET | `/patient-portal/history` | 就诊历史 | 是 |
+| GET | `/patient-portal/qrcode` | 生成患者二维码 | 是 |
+| GET | `/patient-portal/profile` | 个人信息 | 是 |
+
 #### 权重管理 `/model-weights`
 
 | 方法 | 路径 | 说明 |
@@ -822,8 +1003,8 @@ frontend/
 
 ```bash
 # ===== 第 1 步: 克隆项目 =====
-git clone <repository-url>
-cd AIX-RayIntelligentDiagnosisSystemV3.0
+git clone https://github.com/YLJ109/ChestAI-Diagnosis-V3.0.git
+cd ChestAI-Diagnosis-V3.0
 
 # ===== 第 2 步: 启动后端 =====
 cd backend
@@ -1196,6 +1377,58 @@ docker-compose up -d --build
 
 只需在 **管理后台 → 大模型API管理** 中修改 `API Endpoint` 和 `Model Name` 即可。
 
+### Q9: 人脸识别登录如何使用？
+
+**前置条件：**
+1. 患者需要在系统中注册人脸数据
+2. 摄像头权限已授权
+
+**使用步骤：**
+1. 访问 `/patient-login` 页面
+2. 点击「人脸识别登录」按钮
+3. 允许浏览器访问摄像头
+4. 将面部对准扫描框，保持静止
+5. 系统自动识别（每 300ms 检测一次）
+6. 识别成功后自动登录
+
+**注意事项：**
+- 确保光线充足，避免逆光
+- 面部无遮挡（口罩、墨镜等）
+- 摄像头分辨率至少 1280x720
+- 相似度阈值 0.5，低于此值会拒绝登录
+
+### Q10: 患者门户有哪些功能？
+
+**完整患者自助服务系统：**
+- **多种登录方式**：人脸识别 / 二维码扫码 / 账号密码
+- **智能分诊**：症状分析 + 生命体征录入 + AI 评估
+- **AI 医学咨询**：SSE 流式对话，5 种医生角色切换
+- **报告查询**：查看个人所有诊断报告（含热力图）
+- **就诊历史**：完整就诊记录时间线
+- **打印报告**：统一打印入口，患者照片+二维码集成
+- **移动端适配**：自动检测设备，跳转专属移动端页面
+- **访客模式**：未登录用户可浏览部分公开内容
+
+**权限控制：**
+- 患者只能查看自己的报告和历史记录
+- 无法查看他人数据，确保隐私安全
+
+### Q11: 移动端如何访问？
+
+**自动跳转机制：**
+- 系统会自动检测设备类型（手机/平板）
+- 访问患者门户时，自动跳转到移动端页面
+- 无需手动选择，用户体验流畅
+
+**移动端专属页面：**
+- 移动端首页：简化布局，触控友好
+- 移动端登录/注册：专为小屏优化的表单
+- 移动端报告列表：卡片式布局，滑动浏览
+- 移动端 AI 咨询：聊天界面优化，输入便捷
+- 移动端智能分诊：步骤引导，清晰直观
+- 移动端个人信息：资料编辑优化
+- 移动端二维码：扫码登录快捷入口
+
 ---
 
 ## 安全说明
@@ -1230,19 +1463,29 @@ docker-compose up -d --build
 
 ## 已知限制
 
-| 限制 | 说明 | 计划 |
+| **限制** | 说明 | 计划 |
 |:-----|:-----|:-----|
 | **SQLite 并发** | SQLite 不支持高并发写入 | 未来可选 PostgreSQL |
 | **单节点部署** | 当前不支持分布式/集群 | 可通过负载均衡扩展只读 |
 | **DICOM 支持** | 声明了支持但尚未完整实现 | 计划 V3.1 完善 |
 | **多租户** | 无医院/机构隔离 | 可通过数据标记实现 |
 | **国际化** | 目前仅中文界面 | 可扩展 i18n |
-| **移动端适配** | 未针对移动端优化 | 响应式布局基础已有 |
 | **模型更新** | 不支持在线训练/微调 | 需离线训练后替换权重 |
 
 ---
 
 ## 开发路线图
+
+### V3.0 (已完成)
+
+- [x] 患者门户系统（PC端）
+- [x] 人脸识别登录（1280x720 HD 高清自动识别）
+- [x] 二维码扫码登录
+- [x] 诊断修正功能（二次修正+重新生成报告）
+- [x] 统一打印报告（跨模块入口+患者照片/二维码集成）
+- [x] 渲染优化（影像分析立即显示，AI报告异步生成）
+- [x] 批量诊断优化（三列Grid布局+实时进度）
+- [x] 权限控制增强（患者只能查看自己的数据）
 
 ### V3.1 (规划中)
 
@@ -1257,8 +1500,6 @@ docker-compose up -d --build
 - [ ] 多机构/多租户隔离
 - [ ] 移动端响应式适配
 - [ ] 国际化 (i18n) 英文界面
-- [ ] 模型版本对比 / A/B 测试
-- [ ] 诊断知识库 / 病例库管理
 
 ### V4.0 (愿景)
 
@@ -1276,7 +1517,7 @@ docker-compose up -d --build
 AIX-RayIntelligentDiagnosisSystemV3.0/
 │
 ├── backend/                     # Python Flask 后端
-│   ├── api/                     # 15 个 API 蓝图模块
+│   ├── api/                     # 17 个 API 蓝图模块（含人脸识别、患者门户）
 │   ├── models/                  # 14 个 ORM 数据模型
 │   ├── services/                # 核心业务服务 (AI/LLM/报告)
 │   ├── utils/                   # 工具函数 (认证/加密/校验)
@@ -1293,8 +1534,8 @@ AIX-RayIntelligentDiagnosisSystemV3.0/
 ├── frontend/                    # Vue 3 前端
 │   ├── public/favicon.svg       # 网站图标
 │   ├── src/
-│   │   ├── api/                 # 16 个 API 服务模块
-│   │   ├── views/               # 15 个页面组件 (含 admin 子目录 7 个)
+│   │   ├── api/                 # 18 个 API 服务模块（含人脸识别、患者门户）
+│   │   ├── views/               # 26+ 个页面组件（含患者门户9页）
 │   │   ├── layouts/             # 2 个布局组件
 │   │   ├── stores/              # 3 个 Pinia Store
 │   │   ├── router/              # 路由 + 守卫
@@ -1306,15 +1547,10 @@ AIX-RayIntelligentDiagnosisSystemV3.0/
 │   ├── vite.config.ts           # Vite 配置
 │   └── tsconfig.json            # TS 配置
 │
-├── ProjectImage/                # 项目截图 (13 张)
-│   ├── 登录.png
-│   ├── 数据看板.png
-│   ├── 诊断中心.png
-│   ├── 批量诊断.png
-│   ├── 智能分诊.png
-│   ├── AI咨询.png
-│   ├── 历史诊断.png
-│   └── 后台管理-*.png           # (7 张)
+│   ├── ProjectImage/                # 项目截图 (28 张)
+│   │   ├── 医护人员-*.png           # (16 张) 登录/诊断/分诊/审批等
+│   │   ├── 患者终端-*.png           # (6 张)  患者门户各功能
+│   │   └── 后台管理-*.png           # (7 张)  管理端各模块
 │
 ├── .gitignore                   # Git 忽略规则
 ├── .env                         # 环境变量 (需自行创建)
@@ -1327,6 +1563,10 @@ AIX-RayIntelligentDiagnosisSystemV3.0/
 
 **胸影智诊 V3.0** — 让 AI 赋能医学影像诊断
 
-如有问题或建议，欢迎提 Issue 或 Pull Request。
+🌐 [GitHub](https://github.com/YLJ109/ChestAI-Diagnosis-V3.0) | 📖 [文档](#目录) | 🚀 [快速开始](#快速开始)
+
+如有问题或建议，欢迎提 [Issue](https://github.com/YLJ109/ChestAI-Diagnosis-V3.0/issues) 或 [Pull Request](https://github.com/YLJ109/ChestAI-Diagnosis-V3.0/pulls)。
+
+⭐ 如果这个项目对您有帮助，请给个 Star 支持一下！
 
 </div>

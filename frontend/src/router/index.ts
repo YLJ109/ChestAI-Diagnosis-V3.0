@@ -1,7 +1,6 @@
 /** Vue Router 路由配置 */
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { shouldUseMobile, getMobileRoute } from '@/utils/device'
 
 const routes: RouteRecordRaw[] = [
   // ===== 公开页面 =====
@@ -40,24 +39,6 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '患者登录', public: true },
   },
   {
-    path: '/patient-login/mobile',
-    name: 'MobilePatientLogin',
-    component: () => import('@/views/login/MobileLoginPage.vue'),
-    meta: { title: '患者登录', public: true },
-  },
-  {
-    path: '/patient-register',
-    name: 'PatientRegister',
-    component: () => import('@/views/login/PatientRegisterPage.vue'),
-    meta: { title: '患者注册', public: true },
-  },
-  {
-    path: '/patient-register/mobile',
-    name: 'MobilePatientRegister',
-    component: () => import('@/views/login/MobileRegisterPage.vue'),
-    meta: { title: '患者注册', public: true },
-  },
-  {
     path: '/patient-login/face',
     name: 'PatientFaceLogin',
     component: () => import('@/views/patient/FaceLoginPage.vue'),
@@ -77,18 +58,6 @@ const routes: RouteRecordRaw[] = [
         name: 'PatientHome',
         component: () => import('@/views/patient/HomePage.vue'),
         meta: { title: '首页', public: true },  // ✅ 公开
-      },
-      {
-        path: 'mobile',
-        name: 'PatientMobile',
-        component: () => import('@/views/patient/MobileMainPage.vue'),
-        meta: { title: '移动端', public: true, mobile: true },  // 📱 移动端专属
-      },
-      {
-        path: 'mobile-guest',
-        name: 'MobileGuest',
-        component: () => import('@/views/patient/MobileGuestPage.vue'),
-        meta: { title: '移动端首页', public: true, mobile: true },  // 📱 移动端未登录主页
       },
       {
         path: 'report',
@@ -263,35 +232,6 @@ router.beforeEach((to, _from, next) => {
 
   // 设置页面标题
   document.title = `${to.meta.title || '胸影智诊V3.0'} - 胸影智诊`
-
-  // ========== 移动端自动跳转 ==========
-  // 如果是患者门户且检测到移动设备,自动跳转到移动端页面
-  // 但排除登录/注册页面
-  const isLoginPage = to.path === '/patient-login' ||
-    to.path === '/patient-register' ||
-    to.path === '/patient-login/face' ||
-    to.path === '/login'
-
-  if (to.path.startsWith('/patient') && !to.path.includes('/mobile') && !isLoginPage) {
-    const isMobileDevice = shouldUseMobile()
-
-    if (isMobileDevice) {
-      // 检查是否已经访问过移动端(避免循环跳转)
-      const lastVisitedMobile = sessionStorage.getItem('last_visited_mobile')
-      const currentTime = Date.now()
-
-      if (!lastVisitedMobile || (currentTime - parseInt(lastVisitedMobile)) > 5000) {
-        // 5秒内不重复跳转
-        sessionStorage.setItem('last_visited_mobile', currentTime.toString())
-
-        // 跳转到移动端页面
-        const mobilePath = getMobileRoute(to.path)
-        console.log('[路由] 检测到移动设备,自动跳转到:', mobilePath)
-        next(mobilePath)
-        return
-      }
-    }
-  }
 
   // ========== 公开页面 ==========
   if (to.meta.public) {

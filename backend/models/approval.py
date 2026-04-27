@@ -86,7 +86,28 @@ class Approval(db.Model):
             # 疾病概率
             if self.diagnosis:
                 probs = self.diagnosis.disease_probabilities.all()
+                print(
+                    f'[DEBUG] Approval {self.id} - diagnosis {self.diagnosis_id} - probabilities count: {len(probs)}')
+                if probs:
+                    for p in probs[:3]:  # 只打印前3个
+                        print(
+                            f'  - {p.disease_name_zh}: {p.probability} (exceeded: {p.threshold_exceeded})')
                 result['probabilities'] = [p.to_dict() for p in probs]
+
+                # ✅ 尝试获取诊断记录的最新报告（即使 report_id 为 null）
+                from models.report import Report
+                latest_report = Report.query.filter_by(
+                    diagnosis_id=self.diagnosis_id
+                ).order_by(Report.version_no.desc()).first()
+
+                if latest_report:
+                    result['report'] = latest_report.to_dict()
+                    print(
+                        f'[DEBUG] Found report {latest_report.id} for diagnosis {self.diagnosis_id}')
+                else:
+                    print(
+                        f'[DEBUG] No report found for diagnosis {self.diagnosis_id}')
+
                 # 影像URL
                 if self.diagnosis.image_path:
                     result['image_url'] = f"/static/{self.diagnosis.image_path}"
