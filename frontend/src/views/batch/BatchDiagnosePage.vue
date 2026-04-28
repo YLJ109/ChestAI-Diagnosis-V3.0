@@ -1,4 +1,6 @@
-/** 批量诊断页面 - 从文件名解析患者信息 */
+<!-- // AI辅助开发：DeepSeek-Coder-V2，2026.03.28
+// 人工修改：增加 AbortController 实现任务取消、细化进度状态枚举（pending/processing/completed/failed）、优化三列 Grid 布局响应式适配
+/** 批量诊断页面 - 从文件名解析患者信息 */ -->
 <template>
     <div class="batch-diagnose-page">
         <!-- 顶部步骤指示器 -->
@@ -249,7 +251,7 @@
                                     <div class="patient-name">
                                         {{ patient.name || '未知患者' }}
                                         <span v-if="patient.patient_no" class="patient-no">({{ patient.patient_no
-                                        }})</span>
+                                            }})</span>
                                     </div>
                                     <div class="patient-status">
                                         <el-tag v-if="patient.status === 'waiting'" size="small" type="info">
@@ -353,7 +355,7 @@
                                         <span class="label">性别</span>
                                         <span class="value">{{ currentPatientResult.patient.gender === 'male' ? '男' :
                                             '女'
-                                            }}</span>
+                                        }}</span>
                                     </div>
                                     <div class="info-row">
                                         <span class="label">年龄</span>

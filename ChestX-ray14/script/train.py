@@ -1,3 +1,5 @@
+# AI辅助开发：DeepSeek-Coder-V2，2026.03.10
+# 人工修改：增加 ImageNet 预训练模型标准归一化参数、加入 WeightedRandomSampler 解决类别不平衡、优化 num_workers 并行加载
 """
 DenseNet-121 胸部 X 光影像多标签分类训练脚本
 基于 ChestX-ray14 数据集，检测 14 种胸部疾病

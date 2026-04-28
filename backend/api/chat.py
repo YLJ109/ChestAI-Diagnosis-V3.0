@@ -1,3 +1,5 @@
+# AI辅助开发：DeepSeek-R1，2026.03.20
+# 人工修改：增加 AiChatSession 和 AiChatMessage 数据库模型、实现 5 种医生角色系统提示词切换、添加消息历史保留（最近 10 轮）
 """AI咨询API"""
 import json
 import uuid
