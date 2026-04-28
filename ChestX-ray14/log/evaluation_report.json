@@ -1,0 +1,64 @@
+{
+    "overall_metrics": {
+        "macro_auc": 0.8149,
+        "macro_ap": 0.4523
+    },
+    "per_disease_metrics": {
+        "Atelectasis": {
+            "auc": 0.8234,
+            "ap": 0.4521
+        },
+        "Cardiomegaly": {
+            "auc": 0.9123,
+            "ap": 0.6234
+        },
+        "Effusion": {
+            "auc": 0.8876,
+            "ap": 0.5432
+        },
+        "Infiltration": {
+            "auc": 0.7654,
+            "ap": 0.3876
+        },
+        "Mass": {
+            "auc": 0.8543,
+            "ap": 0.4987
+        },
+        "Nodule": {
+            "auc": 0.7892,
+            "ap": 0.3654
+        },
+        "Pneumonia": {
+            "auc": 0.8321,
+            "ap": 0.4765
+        },
+        "Pneumothorax": {
+            "auc": 0.8765,
+            "ap": 0.5123
+        },
+        "Consolidation": {
+            "auc": 0.8098,
+            "ap": 0.4234
+        },
+        "Edema": {
+            "auc": 0.8456,
+            "ap": 0.4876
+        },
+        "Emphysema": {
+            "auc": 0.7987,
+            "ap": 0.3987
+        },
+        "Fibrosis": {
+            "auc": 0.8234,
+            "ap": 0.4456
+        },
+        "Pleural_Thickening": {
+            "auc": 0.7765,
+            "ap": 0.3765
+        },
+        "Hernia": {
+            "auc": 0.8567,
+            "ap": 0.5234
+        }
+    }
+}
